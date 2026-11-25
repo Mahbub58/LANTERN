@@ -1,0 +1,459 @@
+{
+  "version": "1.0.0-demo",
+  "cards": [
+    {
+      "id": "flood-water-entering-home",
+      "title": {
+        "en": "Water is entering your home",
+        "ur": "پانی آپ کے گھر میں داخل ہو رہا ہے",
+        "roman": "Pani aap ke ghar mein daakhil ho raha hai"
+      },
+      "steps": {
+        "en": [
+          "Move to the highest floor or the highest safe ground. Stay out of moving water.",
+          "If water reaches electrical sockets or appliances, do not touch them. Turn off power only if the switch is dry and safe to reach.",
+          "Take drinking water, medicines you already use, ID documents, a torch and a phone charger in a waterproof bag.",
+          "Switch off gas and electricity at the mains only if it is safe to reach.",
+          "Call your local emergency number and tell them your area and how many people are with you.",
+          "If you must leave, use a rope or hold hands, and avoid flooded roads, bridges and drains."
+        ],
+        "ur": [
+          "سب سے اوپر والی منزل یا محفوظ بلند جگہ پر جائیں۔ بہتے پانی سے دور رہیں۔",
+          "اگر پانی بجلی کے سوکٹ یا آلات تک پہنچ گیا ہے تو انہیں نہ چھوئیں۔ بجلی صرف اس وقت بند کریں جب سوئچ خشک اور محفوظ طریقے سے پہنچ میں ہو۔",
+          "پینے کا پانی، اپنی باقاعدہ دوائیں، شناختی دستاویزات، ٹارچ اور فون چارجر واٹر پروف تھیلے میں لے لیں۔",
+          "گیس اور بجلی کا مین سوئچ صرف اس وقت بند کریں جب وہ محفوظ طریقے سے پہنچ میں ہو۔",
+          "اپنے علاقے کے ایمرجنسی نمبر پر کال کریں، اپنا علاقہ اور ساتھ موجود لوگوں کی تعداد بتائیں۔",
+          "اگر نکلنا ضروری ہو تو رسی کا سہارا لیں یا ہاتھ پکڑ کر چلیں۔ سیلاب زدہ سڑکوں، پلوں اور نالیوں سے بچیں۔"
+        ],
+        "roman": [
+          "Sab se oopar wali manzil ya mehfooz buland jagah par jayen. Behte pani se door rahen.",
+          "Agar pani bijli ke socket ya appliances tak pahunch gaya hai to unhein na chhuyen. Bijli sirf tab band karein jab switch sookha aur mehfooz tareeqe se pahunch mein ho.",
+          "Peene ka pani, apni baqaida dawaein, shanakhti documents, torch aur phone charger waterproof bag mein le lein.",
+          "Gas aur bijli ka main switch sirf tab band karein jab woh mehfooz tareeqe se pahunch mein ho.",
+          "Apne ilaqay ke emergency number par call karein, apna ilaqa aur saath mojood logon ki tadaad batayen.",
+          "Agar nikalna zaroori ho to rassi ka sahara lein ya haath pakar kar chalein. Flood zada sarkon, pulon aur naaliyon se bachein."
+        ]
+      },
+      "never": {
+        "en": [
+          "Never walk, swim or drive through moving water.",
+          "Never touch electrical wires or wet switches.",
+          "Never drink flood water or use it to cook.",
+          "Never leave children or elderly people alone."
+        ],
+        "ur": [
+          "کبھی بہتے پانی میں نہ چلیں، تیریں نہ لگائیں اور گاڑی نہ چلائیں۔",
+          "کبھی بجلی کے تاروں یا گیلے سوئچز کو نہ چھوئیں۔",
+          "کبھی سیلاب کا پانی نہ پییں اور نہ اس میں کھانا پکائیں۔",
+          "بچوں اور بزرگوں کو کبھی اکیلا نہ چھوڑیں۔"
+        ],
+        "roman": [
+          "Kabhi behte pani mein na chalein, na teer lagayen aur na gaari chalayen.",
+          "Kabhi bijli ke taaron ya geele switches ko na chhuyen.",
+          "Kabhi flood ka pani na piyen aur na us mein khana pakayen.",
+          "Bachon aur baron ko kabhi akela na chhoren."
+        ]
+      },
+      "source": "TO VERIFY",
+      "keywords": {
+        "en": [
+          "water entering home",
+          "water coming into my house",
+          "flood water in house",
+          "house is flooding",
+          "water inside the house"
+        ],
+        "ur": [
+          "پانی گھر میں آ گیا",
+          "گھر میں پانی",
+          "سیلاب گھر میں",
+          "پانی اندر آ رہا"
+        ],
+        "roman": [
+          "pani ghar mein aa gaya",
+          "ghar mein pani",
+          "pani andar aa raha",
+          "ghar doob raha hai"
+        ]
+      }
+    },
+    {
+      "id": "flood-water-rising",
+      "title": {
+        "en": "Flood water is rising",
+        "ur": "سیلاب کا پانی بڑھ رہا ہے",
+        "roman": "Flood ka pani barh raha hai"
+      },
+      "steps": {
+        "en": [
+          "Move to higher ground now. Do not wait for an official warning.",
+          "Avoid underpasses, river banks, drains and the seashore.",
+          "If you are in a car and water starts rising, leave it and move to higher ground if it is safe.",
+          "Keep children and elderly people close. Carry only what you need.",
+          "Call emergency services and share your area and the number of people with you.",
+          "If you are trapped, go to the highest point, signal with a torch or cloth, and stay visible."
+        ],
+        "ur": [
+          "ابھی بلند جگہ پر جائیں۔ سرکاری وارننگ کا انتظار نہ کریں۔",
+          "زیرِ زمین راستوں، دریا کے کناروں، نالیوں اور سمندر کے کنارے سے بچیں۔",
+          "اگر گاڑی میں ہیں اور پانی بڑھنے لگے تو گاڑی چھوڑ کر محفوظ بلند جگہ پر جائیں۔",
+          "بچوں اور بزرگوں کو قریب رکھیں۔ صرف ضروری سامان لے جائیں۔",
+          "ایمرجنسی سروسز کو کال کریں اور اپنا علاقہ اور لوگوں کی تعداد بتائیں۔",
+          "اگر پھنس گئے ہیں تو سب سے اونچی جگہ جائیں، ٹارچ یا کپڑے سے اشارہ کریں اور نظر آتے رہیں۔"
+        ],
+        "roman": [
+          "Abhi buland jagah par jayen. Sarkari warning ka intezar na karein.",
+          "Underpass, darya ke kinare, naaliyon aur samundar ke kinare se bachein.",
+          "Agar gaari mein hain aur pani barhne lage to gaari chhor kar mehfooz buland jagah par jayen.",
+          "Bachon aur baron ko qareeb rakhein. Sirf zaroori saman le jayen.",
+          "Emergency services ko call karein aur apna ilaqa aur logon ki tadaad batayen.",
+          "Agar phans gaye hain to sab se oonchi jagah jayen, torch ya kapre se ishara karein aur nazar aate rahein."
+        ]
+      },
+      "never": {
+        "en": [
+          "Never drive through flood water.",
+          "Never cross a bridge you cannot see clearly.",
+          "Never shelter under a tree, bridge or power pole during a storm.",
+          "Never re-enter a flooded building until it is declared safe."
+        ],
+        "ur": [
+          "کبھی سیلابی پانی میں گاڑی نہ چلائیں۔",
+          "کبھی ایسے پل سے نہ گزریں جو صاف نظر نہ آ رہا ہو۔",
+          "طوفان کے دوران کبھی درخت، پل یا بجلی کے کھمبے کے نیچے پناہ نہ لیں۔",
+          "کبھی سیلاب زدہ عمارت میں اس وقت تک واپس نہ جائیں جب تک اسے محفوظ قرار نہ دیا جائے۔"
+        ],
+        "roman": [
+          "Kabhi flood ke pani mein gaari na chalayen.",
+          "Kabhi aise pul se na guzren jo saaf nazar na aa raha ho.",
+          "Toofan ke doran kabhi darakht, pul ya bijli ke khambay ke neeche panah na lein.",
+          "Kabhi flood zada imarat mein tab tak wapas na jayen jab tak use mehfooz qarar na de diya jaye."
+        ]
+      },
+      "source": "TO VERIFY",
+      "keywords": {
+        "en": [
+          "flood water rising",
+          "water level rising",
+          "flood coming",
+          "flood is rising",
+          "water is rising fast"
+        ],
+        "ur": [
+          "سیلاب کا پانی بڑھ رہا",
+          "پانی بڑھ رہا",
+          "سیلاب آ رہا",
+          "پانی کی سطح"
+        ],
+        "roman": [
+          "pani barh raha",
+          "flood ka pani barh raha",
+          "selab aa raha",
+          "pani ki satah"
+        ]
+      }
+    },
+    {
+      "id": "flood-drinking-water",
+      "title": {
+        "en": "Safe drinking water after a flood",
+        "ur": "سیلاب کے بعد محفوظ پینے کا پانی",
+        "roman": "Flood ke baad mehfooz peene ka pani"
+      },
+      "steps": {
+        "en": [
+          "Use bottled or sealed water if it is available.",
+          "If there is no sealed water, boil water for at least one minute and let it cool before drinking.",
+          "Store cooled water in a clean container with a lid.",
+          "Do not use flood water for drinking, cooking, washing dishes or brushing teeth.",
+          "Keep containers away from flood water and animals.",
+          "Ask local responders where safe water is being distributed."
+        ],
+        "ur": [
+          "اگر بند یا سیل شدہ پانی دستیاب ہو تو وہی استعمال کریں۔",
+          "اگر بند پانی نہیں ہے تو پانی کو کم از کم ایک منٹ تک ابالیں اور ٹھنڈا ہونے کے بعد پییں۔",
+          "ٹھنڈا پانی ڈھکن والے صاف برتن میں رکھیں۔",
+          "سیلاب کے پانی کو پینے، کھانا پکانے، برتن دھونے یا دانت صاف کرنے کے لیے استعمال نہ کریں۔",
+          "برتن سیلاب کے پانی اور جانوروں سے دور رکھیں۔",
+          "مقامی امدادی ٹیم سے پوچھیں کہ محفوظ پانی کہاں تقسیم ہو رہا ہے۔"
+        ],
+        "roman": [
+          "Agar band ya seal shuda pani dastyab ho to wohi istemal karein.",
+          "Agar band pani nahi hai to pani ko kam az kam ek minute tak ubalayen aur thanda hone ke baad piyen.",
+          "Thanda pani dhakkan wale saaf bartan mein rakhein.",
+          "Flood ke pani ko peene, khana pakane, bartan dhone ya daant saaf karne ke liye istemal na karein.",
+          "Bartan flood ke pani aur janwaron se door rakhein.",
+          "Muqami imdadi team se poochhein ke mehfooz pani kahan taqseem ho raha hai."
+        ]
+      },
+      "never": {
+        "en": [
+          "Never drink flood water.",
+          "Never assume clear water is safe.",
+          "Never use a container that held chemicals or fuel.",
+          "Never take medicines that were not prescribed for you."
+        ],
+        "ur": [
+          "کبھی سیلاب کا پانی نہ پییں۔",
+          "کبھی یہ نہ سمجھیں کہ صاف نظر آنے والا پانی محفوظ ہے۔",
+          "کبھی ایسا برتن استعمال نہ کریں جس میں کیمیکل یا ایندھن رکھا گیا ہو۔",
+          "کبھی وہ دوائیں نہ لیں جو ڈاکٹر نے آپ کے لیے تجویز نہ کی ہوں۔"
+        ],
+        "roman": [
+          "Kabhi flood ka pani na piyen.",
+          "Kabhi yeh na samjhein ke saaf nazar aane wala pani mehfooz hai.",
+          "Kabhi aisa bartan istemal na karein jis mein chemical ya eendhan rakha gaya ho.",
+          "Kabhi woh dawaein na lein jo doctor ne aap ke liye tajweez nahi kin."
+        ]
+      },
+      "source": "TO VERIFY",
+      "keywords": {
+        "en": [
+          "safe drinking water after flood",
+          "drinking water flood",
+          "boil water",
+          "is the water safe to drink",
+          "clean water"
+        ],
+        "ur": [
+          "سیلاب کے بعد پینے کا پانی",
+          "محفوظ پانی",
+          "پانی ابالیں",
+          "پینے کا پانی"
+        ],
+        "roman": [
+          "flood ke baad peene ka pani",
+          "mehfooz pani",
+          "pani ubalayen",
+          "peene ka pani"
+        ]
+      }
+    },
+    {
+      "id": "earthquake-shaking-now",
+      "title": {
+        "en": "Earthquake shaking now",
+        "ur": "زلزلہ ابھی آ رہا ہے",
+        "roman": "Zalzala abhi aa raha hai"
+      },
+      "steps": {
+        "en": [
+          "Drop, cover and hold on. Get under a sturdy table or beside an inside wall.",
+          "Cover your head and neck with your arms.",
+          "Stay away from windows, mirrors, shelves and hanging objects.",
+          "If you are outdoors, move to an open area away from buildings, walls and power lines.",
+          "If you are driving, stop in an open area and stay inside with your seatbelt on until the shaking stops.",
+          "Wait for the shaking to stop before moving, then check for injuries and hazards."
+        ],
+        "ur": [
+          "جھکیں، ڈھانپیں اور پکڑ کر رہیں۔ مضبوط میز کے نیچے یا اندرونی دیوار کے ساتھ بیٹھیں۔",
+          "اپنے سر اور گردن کو بازوؤں سے ڈھانپیں۔",
+          "کھڑکیوں، آئینوں، الماریوں اور لٹکتے سامان سے دور رہیں۔",
+          "اگر باہر ہیں تو عمارتوں، دیواروں اور بجلی کی تاروں سے دور کھلی جگہ جائیں۔",
+          "اگر گاڑی میں ہیں تو کھلی جگہ پر رکیں اور جھٹکے رکنے تک سیٹ بیلٹ باندھ کر اندر رہیں۔",
+          "جھٹکے رکنے کا انتظار کریں، پھر زخمیوں اور خطرات کی جانچ کریں۔"
+        ],
+        "roman": [
+          "Jhuken, dhanpen aur pakar kar rahen. Mazboot mez ke neeche ya andarooni deewar ke saath baith jayen.",
+          "Apne sar aur gardan ko baazuon se dhanpen.",
+          "Khirkiyon, aayinon, almariyon aur latakte saman se door rahen.",
+          "Agar bahar hain to imaraton, deewaron aur bijli ke taaron se door khuli jagah jayen.",
+          "Agar gaari mein hain to khuli jagah par ruken aur jhatke rukne tak seat belt bandh kar andar rahen.",
+          "Jhatke rukne ka intezar karein, phir zakhmiyon aur khatrat ki jaanch karein."
+        ]
+      },
+      "never": {
+        "en": [
+          "Never run outside during strong shaking.",
+          "Never use an elevator.",
+          "Never stand in a doorway unless you know it is a safe load-bearing frame.",
+          "Never light a match or use a lighter after an earthquake; there may be gas leaks."
+        ],
+        "ur": [
+          "تیز جھٹکوں کے دوران کبھی باہر بھاگنے کی کوشش نہ کریں۔",
+          "کبھی لفٹ استعمال نہ کریں۔",
+          "کبھی دروازے کے چوکھٹ میں نہ کھڑے ہوں جب تک آپ کو معلوم نہ ہو کہ وہ محفوظ لوڈ بیئرنگ فریم ہے۔",
+          "زلزلے کے بعد کبھی ماچس یا لائٹر نہ جلائیں؛ گیس لیک ہو سکتی ہے۔"
+        ],
+        "roman": [
+          "Tez jhatkon ke doran kabhi bahar bhagne ki koshish na karein.",
+          "Kabhi lift istemal na karein.",
+          "Kabhi darwaze ke chokhat mein na khare hon jab tak aap ko maloom na ho ke woh mehfooz load-bearing frame hai.",
+          "Zalzale ke baad kabhi maachis ya lighter na jalayen; gas leak ho sakti hai."
+        ]
+      },
+      "source": "TO VERIFY",
+      "keywords": {
+        "en": [
+          "earthquake shaking now",
+          "earthquake right now",
+          "earthquake",
+          "quake",
+          "ground is shaking"
+        ],
+        "ur": [
+          "زلزلہ",
+          "زلزلہ آ رہا",
+          "زمین ہل رہی",
+          "بھوکمپ"
+        ],
+        "roman": [
+          "zalzala",
+          "zalzala aa raha",
+          "zameen hil rahi",
+          "bhukamp"
+        ]
+      }
+    },
+    {
+      "id": "earthquake-after",
+      "title": {
+        "en": "After the earthquake",
+        "ur": "زلزلے کے بعد",
+        "roman": "Zalzale ke baad"
+      },
+      "steps": {
+        "en": [
+          "Check yourself and people near you for injuries. Do not move a seriously injured person unless there is immediate danger.",
+          "Look for fire, gas leaks, fallen power lines and damaged walls.",
+          "If you smell gas, open windows, leave the building and turn off the gas outside if it is safe.",
+          "Use a torch, not candles or matches.",
+          "Expect aftershocks. Stay away from damaged buildings and walls.",
+          "Use text messages if the phone network is busy. Keep calls for emergencies."
+        ],
+        "ur": [
+          "اپنے اور قریب کے لوگوں کے زخموں کی جانچ کریں۔ شدید زخمی شخص کو صرف فوری خطرے کی صورت میں ہلائیں۔",
+          "آگ، گیس کے رساؤ، گرے ہوئے بجلی کے تاروں اور ٹوٹی دیواروں کو دیکھیں۔",
+          "اگر گیس کی بو آئے تو کھڑکیاں کھولیں، عمارت سے باہر جائیں اور محفوظ ہو تو باہر سے گیس بند کریں۔",
+          "موم بتی یا ماچس کے بجائے ٹارچ استعمال کریں۔",
+          "آفٹر شاکس کی توقع رکھیں۔ خراب عمارتوں اور دیواروں سے دور رہیں۔",
+          "اگر فون نیٹ ورک مصروف ہو تو پیغام بھیجیں۔ کال صرف ایمرجنسی کے لیے رکھیں۔"
+        ],
+        "roman": [
+          "Apne aur qareeb ke logon ke zakhm ki jaanch karein. Shadeed zakhmi shakhs ko sirf fori khatre ki soorat mein hilayen.",
+          "Aag, gas leak, gire hue bijli ke taar aur tooti deewaron ko dekhein.",
+          "Agar gas ki boo aaye to khirkiyan kholen, imarat se bahar jayen aur mehfooz ho to bahar se gas band karein.",
+          "Mom batti ya maachis ke bajaye torch istemal karein.",
+          "Aftershocks ki tawaqqo rakhein. Kharab imaraton aur deewaron se door rahen.",
+          "Agar phone network masroof ho to message bhejen. Call sirf emergency ke liye rakhein."
+        ]
+      },
+      "never": {
+        "en": [
+          "Never re-enter a damaged building until authorities say it is safe.",
+          "Never use open flames after an earthquake.",
+          "Never touch fallen power lines.",
+          "Never drive through damaged roads or bridges."
+        ],
+        "ur": [
+          "کبھی خراب عمارت میں اس وقت تک واپس نہ جائیں جب تک حکام محفوظ نہ کہیں۔",
+          "زلزلے کے بعد کبھی کھلی آگ نہ جلائیں۔",
+          "کبھی گرے ہوئے بجلی کے تاروں کو نہ چھوئیں۔",
+          "کبھی خراب سڑکوں یا پلوں سے گاڑی نہ گزاریں۔"
+        ],
+        "roman": [
+          "Kabhi kharab imarat mein tab tak wapas na jayen jab tak hukkam mehfooz na kahein.",
+          "Zalzale ke baad kabhi khuli aag na jalayen.",
+          "Kabhi gire hue bijli ke taaron ko na chhuyen.",
+          "Kabhi kharab sarkon ya pulon se gaari na guzaren."
+        ]
+      },
+      "source": "TO VERIFY",
+      "keywords": {
+        "en": [
+          "after earthquake",
+          "after the earthquake",
+          "aftershock",
+          "post earthquake",
+          "what to do after an earthquake"
+        ],
+        "ur": [
+          "زلزلے کے بعد",
+          "زلزلہ کے بعد",
+          "آفٹر شاک"
+        ],
+        "roman": [
+          "zalzale ke baad",
+          "zalzala ke baad",
+          "aftershock"
+        ]
+      }
+    },
+    {
+      "id": "earthquake-trapped",
+      "title": {
+        "en": "Trapped under debris",
+        "ur": "ملبے کے نیچے پھنسے ہوئے",
+        "roman": "Malbe ke neeche phanse hue"
+      },
+      "steps": {
+        "en": [
+          "Try not to move more than necessary. Cover your mouth and nose with cloth to reduce dust.",
+          "Tap on a pipe or wall, or whistle, so rescuers can hear you. Shout only as a last resort.",
+          "If you have a phone and signal, send a text with your location and the number of people to a family member and emergency services.",
+          "Stay calm and breathe slowly. Conserve your energy.",
+          "If you can see daylight or a safe exit, move slowly and watch for falling debris.",
+          "Tell rescuers about anyone else you can hear."
+        ],
+        "ur": [
+          "جتنا کم ہلنا ضروری ہو اتنا ہی ہلیں۔ دھول کم کرنے کے لیے منہ اور ناک کپڑے سے ڈھانپیں۔",
+          "پائپ یا دیوار پر تھپکی دیں یا سیٹی بجائیں تاکہ امدادی کارکن سن سکیں۔ چیخنا آخری حربہ ہو۔",
+          "اگر فون اور سگنل موجود ہے تو اپنی جگہ اور لوگوں کی تعداد کا پیغام خاندان کے فرد اور ایمرجنسی سروسز کو بھیجیں۔",
+          "پرسکون رہیں اور آہستہ سانس لیں۔ توانائی بچائیں۔",
+          "اگر روشنی یا محفوظ راستہ نظر آئے تو آہستہ آگے بڑھیں اور گرتے ملبے سے بچیں۔",
+          "امدادی کارکنوں کو بتائیں کہ آپ کس اور کی آواز سن سکتے ہیں۔"
+        ],
+        "roman": [
+          "Jitna kam hilna zaroori ho utna hi hilen. Dhool kam karne ke liye munh aur naak kapre se dhanpen.",
+          "Pipe ya deewar par thapki den ya seeti bajayen taake imdadi karkun sun saken. Cheekhna aakhri hathyar ho.",
+          "Agar phone aur signal mojood hai to apni jagah aur logon ki tadaad ka message khandan ke fard aur emergency services ko bhejen.",
+          "Pursukoon rahen aur aahista saans len. Tawanai bachayen.",
+          "Agar roshni ya mehfooz raasta nazar aaye to aahista aage barhen aur girte malbe se bachein.",
+          "Imdadi karkunon ko batayen ke aap kis aur ki awaaz sun sakte hain."
+        ]
+      },
+      "never": {
+        "en": [
+          "Never light a match or use a lighter; there may be gas.",
+          "Never kick up dust or shout continuously.",
+          "Never try to lift heavy debris alone.",
+          "Never leave a safe space if you are seriously injured and rescuers are on the way."
+        ],
+        "ur": [
+          "کبھی ماچس یا لائٹر نہ جلائیں؛ گیس ہو سکتی ہے۔",
+          "کبھی دھول نہ اڑائیں اور مسلسل نہ چیخیں۔",
+          "کبھی بھاری ملبہ اکیلا اٹھانے کی کوشش نہ کریں۔",
+          "اگر شدید زخمی ہیں اور امدادی کارکن راستے میں ہیں تو محفوظ جگہ نہ چھوڑیں۔"
+        ],
+        "roman": [
+          "Kabhi maachis ya lighter na jalayen; gas ho sakti hai.",
+          "Kabhi dhool na urayen aur musalsal na cheekhen.",
+          "Kabhi bhaari malba akelay uthane ki koshish na karein.",
+          "Agar shadeed zakhmi hain aur imdadi karkun raaste mein hain to mehfooz jagah na chhoren."
+        ]
+      },
+      "source": "TO VERIFY",
+      "keywords": {
+        "en": [
+          "trapped under debris",
+          "trapped under rubble",
+          "building collapsed",
+          "stuck under debris",
+          "buried in rubble"
+        ],
+        "ur": [
+          "ملبے کے نیچے",
+          "عمارت گر گئی",
+          "پھنس گیا",
+          "پھنسی ہوئی"
+        ],
+        "roman": [
+          "malbe ke neeche",
+          "imarat gir gayi",
+          "phansa hua",
+          "phans gaye"
+        ]
+      }
+    }
+  ]
+}
