@@ -29,7 +29,6 @@ fun LanternNavHost(
                 onOpenAnswer = { question -> navController.navigate(AnswerRoute(question)) },
                 onOpenSettings = { navController.navigate(SettingsRoute) },
                 onOpenDebug = { navController.navigate(DebugRoute) },
-                onOpenMyReports = { navController.navigate(MyReportsRoute) },
                 onTabSelected = navController::navigateToTab,
             )
         }
@@ -51,6 +50,7 @@ fun LanternNavHost(
             ReportScreenRoute(
                 onOpenReview = { draftId -> navController.navigate(ReportReviewRoute(draftId)) },
                 onOpenMyReports = { navController.navigate(MyReportsRoute) },
+                onOpenSettings = { navController.navigate(SettingsRoute) },
                 onTabSelected = navController::navigateToTab,
             )
         }
@@ -69,6 +69,8 @@ fun LanternNavHost(
                         launchSingleTop = true
                     }
                 },
+                onOpenSettings = { navController.navigate(SettingsRoute) },
+                onTabSelected = navController::navigateToTab,
             )
         }
 
@@ -103,7 +105,10 @@ fun LanternNavHost(
         }
 
         composable<AlertsRoute> {
-            AlertsScreenRoute(onTabSelected = navController::navigateToTab)
+            AlertsScreenRoute(
+                onOpenSettings = { navController.navigate(SettingsRoute) },
+                onTabSelected = navController::navigateToTab,
+            )
         }
 
         composable<SettingsRoute> {

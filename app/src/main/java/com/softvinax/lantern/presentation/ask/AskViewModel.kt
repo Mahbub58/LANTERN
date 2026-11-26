@@ -34,7 +34,6 @@ sealed interface AskEvent {
     data class OpenAnswer(val question: String) : AskEvent
     data object OpenSettings : AskEvent
     data object OpenDebug : AskEvent
-    data object OpenMyReports : AskEvent
 }
 
 @HiltViewModel
@@ -116,7 +115,4 @@ class AskViewModel @Inject constructor(
         viewModelScope.launch { _events.send(AskEvent.OpenDebug) }
     }
 
-    fun openMyReports() {
-        viewModelScope.launch { _events.send(AskEvent.OpenMyReports) }
-    }
 }

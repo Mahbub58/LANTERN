@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.softvinax.lantern.presentation.theme.LanternTheme
@@ -51,26 +52,35 @@ fun NumberedSteps(
     modifier: Modifier = Modifier,
 ) {
     val colors = LanternTheme.colors
+    val shape = RoundedCornerShape(22.dp)
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         steps.forEachIndexed { index, step ->
-            Row(verticalAlignment = Alignment.Top) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(shape)
+                    .background(colors.surface)
+                    .border(1.dp, colors.border, shape)
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Box(
                     modifier = Modifier
-                        .size(30.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
-                        .background(colors.amberTint),
+                        .background(Brush.linearGradient(colors.primaryGradient)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = "${index + 1}",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = colors.amber,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = colors.onAccent,
                     )
                 }
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(14.dp))
                 Text(
                     text = step,
                     style = MaterialTheme.typography.bodyLarge,

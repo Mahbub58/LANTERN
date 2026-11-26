@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,7 +36,9 @@ fun SignalChip(
     val colors = LanternTheme.colors
     val content = if (isOnline) colors.blue else colors.teal
     val container = if (isOnline) colors.blueTint else colors.tealTint
-    val label = stringResource(if (isOnline) R.string.signal_online else R.string.signal_offline)
+    val label = stringResource(
+        if (isOnline) R.string.status_online_cloud else R.string.status_offline_device,
+    )
     val description = stringResource(
         if (isOnline) R.string.cd_network_online else R.string.cd_network_offline,
     )
@@ -44,15 +47,17 @@ fun SignalChip(
         modifier = modifier
             .clip(CircleShape)
             .background(container)
+            .border(1.dp, content.copy(alpha = 0.25f), CircleShape)
             .semantics { contentDescription = description }
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .background(content, CircleShape),
+        Icon(
+            imageVector = if (isOnline) LanternIcons.Cloud else LanternIcons.Smartphone,
+            contentDescription = null,
+            tint = content,
+            modifier = Modifier.size(16.dp),
         )
         Text(
             text = label,
@@ -70,20 +75,20 @@ fun QuickChip(
     modifier: Modifier = Modifier,
 ) {
     val colors = LanternTheme.colors
-    val shape = RoundedCornerShape(14.dp)
+    val shape = RoundedCornerShape(18.dp)
     Row(
         modifier = modifier
-            .heightIn(min = 48.dp)
+            .heightIn(min = 56.dp)
             .clip(shape)
             .background(colors.surfaceElevated)
             .border(1.dp, colors.border, shape)
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.labelLarge,
             color = colors.textPrimary,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,

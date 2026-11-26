@@ -24,6 +24,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -92,17 +94,19 @@ class FirebaseOnDeviceInference @Inject constructor() : OnDeviceInference {
 
         // Structured output keeps the cardId/answer contract reliable. One
         // retry, then the router falls back to cloud or the vetted card text.
-        repeat(MAX_ATTEMPTS) { attempt ->
+        for (attempt in 0 until MAX_ATTEMPTS) {
             try {
-                val response = model.generateObject(
-                    GeneratedAnswer.firebaseAISchema(),
-                    if (attempt == 0) prompt else "$prompt\nReturn the safety card id and the answer.",
-                )
+                val response = withTimeout(ON_DEVICE_TIMEOUT_MS) {
+                    model.generateObject(
+                        GeneratedAnswer.firebaseAISchema(),
+                        if (attempt == 0) prompt else "$prompt\nReturn the safety card id and the answer.",
+                    )
+                }
                 val source = response.response.inferenceSource
                 Log.i(TAG, "inferenceSource=$source model=${FirebaseAiConfig.CLOUD_MODEL_NAME}")
                 if (source != InferenceSource.ON_DEVICE) {
                     Log.w(TAG, "ONLY_ON_DEVICE returned $source; rejecting the response")
-                    return@repeat
+                    continue
                 }
                 val generated = response.getObject()
                 if (generated != null && generated.cardId == card.id) {
@@ -110,6 +114,10 @@ class FirebaseOnDeviceInference @Inject constructor() : OnDeviceInference {
                 }
                 lastError = IllegalStateException("On-device structured answer was empty or used the wrong card")
                 Log.w(TAG, "On-device answer rejected: ${generated?.cardId ?: "null"} vs ${card.id}")
+            } catch (t: TimeoutCancellationException) {
+                lastError = t
+                Log.w(TAG, "On-device request timed out after ${ON_DEVICE_TIMEOUT_MS} ms")
+                break
             } catch (t: Throwable) {
                 lastError = t
                 Log.w(TAG, "On-device attempt ${attempt + 1} failed", t)
@@ -192,6 +200,7 @@ class FirebaseOnDeviceInference @Inject constructor() : OnDeviceInference {
     private companion object {
         const val TAG = "LanternOnDevice"
         const val MAX_ATTEMPTS = 2
+        const val ON_DEVICE_TIMEOUT_MS = 20_000L
     }
 }
 

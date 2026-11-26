@@ -18,6 +18,8 @@
     <string name="signal_label">Signal</string>
     <string name="signal_offline">Signal: Offline</string>
     <string name="signal_online">Signal: Online</string>
+    <string name="status_online_cloud">Online · Cloud</string>
+    <string name="status_offline_device">Offline · On-device</string>
     <string name="offline_mode_footer">Offline mode active · Verified safety cards isi phone par chalte hain</string>
     <string name="online_mode_footer">Online · Cloud jawabat dastyab hain</string>
     <string name="call_emergency_first">Agar mumkin ho to pehle apne muqami emergency number par call karein.</string>
@@ -61,9 +63,16 @@
     <string name="quick_missing_family">Khandan laapata</string>
     <string name="ask_alert_saved">%1$s save hua</string>
     <string name="ask_no_alerts">Is waqt aap ke ilaqe ke liye koi alert nahi hai.</string>
+    <string name="cd_voice_input">Apna sawal bolen</string>
+    <string name="cd_voice_stop">Sunna band karein</string>
+    <string name="voice_listening">Sun raha hai…</string>
+    <string name="voice_permission_denied">Voice input ke liye microphone ki ijazat darkar hai.</string>
+    <string name="voice_unavailable">Is device par voice input dastyab nahi hai.</string>
+    <string name="voice_needs_connection">Is device par voice input ke liye connection darkar hai. Apna sawal likhein.</string>
+    <string name="voice_error">Voice input kaam nahi kar saka. Apna sawal likhein.</string>
 
     <string name="answer_title">Jawab</string>
-    <string name="answer_loading">Isi phone par verified cards dekhe ja rahe hain…</string>
+    <string name="answer_loading">Jawab tayyar kiya ja raha hai…</string>
     <string name="answer_no_match_title">Koi verified card nahi mila</string>
     <string name="answer_no_match_body">Is sawal ke liye humein koi safety card nahi mila. Agar aap khatre mein hain to abhi emergency number par call karein.</string>
     <string name="answer_emergency_numbers">Emergency numbers</string>
@@ -71,12 +80,14 @@
     <string name="answer_steps">Abhi yeh karein</string>
     <string name="answer_never">Yeh kabhi na karein</string>
     <string name="answer_source">Source: %1$s</string>
-    <string name="answer_source_verify">Source: %1$s · TO VERIFY</string>
-    <string name="answer_deeper">Mazeed tafseeli jawab (cloud)</string>
+    <string name="answer_source_verify">Source: %1$s</string>
+    <string name="answer_for_question">Sawal: &quot;%1$s&quot;</string>
+    <string name="answer_deeper">Deeper jawab</string>
     <string name="answer_deeper_loading">Cloud se poochha ja raha hai…</string>
-    <string name="answer_deeper_offline">Cloud jawab ke liye signal zaroori hai</string>
-    <string name="answer_deeper_failed">Cloud jawab dastyab nahi tha. Is project ke liye Gemini API billing enable karein ya on-device jawab use karein.</string>
-    <string name="answer_file_report">Report darj karein</string>
+    <string name="answer_deeper_offline">Deeper jawab</string>
+    <string name="answer_deeper_needs_signal">signal chahiye</string>
+    <string name="answer_deeper_failed">Cloud jawab dastyab nahi tha. Thori der baad dobara koshish karein ya on-device jawab use karein.</string>
+    <string name="answer_file_report">Apni soorat-e-haal report karein</string>
     <string name="answer_ask_another">Doosra sawal poochhein</string>
     <string name="badge_on_device">Isi phone par</string>
     <string name="badge_cloud">Cloud</string>
@@ -168,6 +179,7 @@
     <string name="alerts_offline_note">Save shuda alerts dikhaye ja rahe hain. Naye alerts ke liye signal zaroori hai.</string>
     <string name="alerts_level_info">Maloomat</string>
     <string name="alerts_level_warning">Tambeeh</string>
+    <string name="alert_watch">WATCH</string>
     <string name="alerts_level_urgent">Emergency</string>
     <string name="alerts_loading">Alerts load ho rahe hain…</string>
     <string name="alerts_error">Alerts load nahi ho sake. Save shuda alerts ab bhi dastyab hain.</string>
@@ -237,4 +249,44 @@
     <string name="cd_report_source">Jawab ka source: %1$s</string>
     <string name="cd_selected">Muntakhib</string>
     <string name="cd_debug_title">Lantern. Demo panel ke liye 7 baar tap karein.</string>
+
+    <!-- Guided report flow -->
+    <string name="report_header">REPORT SITUATION</string>
+    <string name="report_step_of">STEP %1$d OF 3</string>
+    <string name="report_what_happening">Kya ho raha hai?</string>
+    <string name="report_people_with_you">Aap ke saath log</string>
+    <string name="report_people_hint">Apne aap aur bachon ko shamil karein</string>
+    <string name="report_next_needs">Next: Zarooriyaat &amp; jagah</string>
+    <string name="report_what_need">Aap ko kya zaroorat hai?</string>
+    <string name="report_where_are_you">Aap kahan hain?</string>
+    <string name="report_use_location">Mera maqam use karein</string>
+    <string name="report_location_off">Taqreeban maqam share karne ke liye on karein.</string>
+    <string name="report_location_cached">Phone par mehfooz</string>
+    <string name="report_location_coords">Cached GPS · %1$s</string>
+    <string name="report_back">Back</string>
+    <string name="report_review">Report ka jaiza</string>
+    <string name="report_edit">Edit</string>
+    <string name="report_check_send">Check karein aur bhejein</string>
+    <string name="report_structured">Isi phone par tarteeb diya gaya</string>
+    <string name="report_type_label">Type</string>
+    <string name="report_people_label">People</string>
+    <string name="report_needs_label">Needs</string>
+    <string name="report_place_label">Place</string>
+    <string name="report_needs_none">Kuch select nahi</string>
+    <string name="report_urgency_pill">Urgency %1$d</string>
+    <string name="report_place_placeholder">Pul ke qareeb, safed ghar ki doosri manzil</string>
+    <string name="type_landslide">Landslide</string>
+
+    <!-- Alerts redesign -->
+    <string name="alerts_local_title">Local alerts</string>
+    <string name="alerts_subtitle">Lantern Desk se live updates</string>
+    <string name="alerts_refresh">Refresh</string>
+    <string name="alerts_filter_all">All alerts</string>
+    <string name="alerts_filter_warnings">Sirf warnings</string>
+    <string name="alerts_severity_warning">Warning</string>
+    <string name="alerts_severity_watch">Watch</string>
+    <string name="alerts_severity_clear">All clear</string>
+    <string name="alerts_no_warnings_title">Is waqt koi warning nahi</string>
+    <string name="alerts_no_warnings_body">Information aur all-clear updates ke liye All alerts select karein.</string>
+    <string name="alerts_close">Band karein</string>
 </resources>

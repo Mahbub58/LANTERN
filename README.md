@@ -37,7 +37,7 @@ on the phone or Gemini in the cloud, and damage reports queue locally and sync t
   are kept in a local queue until anonymous sign-in is possible, then written to Firestore.
 - **Privacy.** `PiiScrubber` runs before every cloud prompt. Coordinates never go to a
   model. Drafts never leave the phone; a report leaves only when the person presses Send.
-- **Tests.** 124 unit tests, 18 emulator-based Firestore rules tests, an always-on Firebase
+- **Tests.** 129 unit tests, 19 emulator-based Firestore rules tests, an always-on Firebase
   wiring test, and an opt-in airplane-mode offline flow test.
 - **Real accuracy numbers.** 40 questions (20 Roman Urdu, 10 Urdu, 10 English) and 20
   reports are measured by `AccuracyReportTest`; the numbers are published below.
@@ -203,7 +203,7 @@ app/src/androidTest/                      Firebase wiring + opt-in offline flow
 firestore.rules                           security rules
 firestore.indexes.json                    no composite indexes required
 firebase.json / .firebaserc               emulator + deploy config
-rules-tests/                              Node emulator rules tests (18)
+rules-tests/                              Node emulator rules tests (19)
 ```
 
 ---
@@ -342,7 +342,7 @@ adb shell am start -n com.mahbub.lantern/com.softvinax.lantern.MainActivity
 2. Turn on **airplane mode** (or use the debug panel's simulated signal). Ask “Flood water
    rising” → the Answer screen shows the vetted card and the **On this phone** or **Card
    text** badge. No network is used.
-3. **Report** → describe damage → review → Send. The confirmation says **Queued**.
+3. **Report** → choose the type and people → Next → choose needs and place → Review report → Check and send. The confirmation says **Queued**.
 4. Turn the signal back on. The queued report flips to **Sent** when Firestore acknowledges
    the write (`hasPendingWrites` becomes false).
 5. Tap the **Lantern** title **7 times** → demo panel. Switch **Simulated signal** online and
@@ -362,7 +362,7 @@ reports/{reportId}
   uid: string                 // request.auth.uid; rules require equality
   description: string         // 1..500
   language: EN | UR | ROMAN_UR
-  type: FLOOD | EARTHQUAKE | OTHER
+  type: FLOOD | EARTHQUAKE | LANDSLIDE | OTHER
   urgency: int 1..5
   peopleCount: int 1..99
   needs: [RESCUE | SHELTER | WATER | FOOD | MEDICAL | CLOTHING | POWER | OTHER]
@@ -407,7 +407,7 @@ never claim to be Sent before the server acknowledged it.
 # 124 JVM tests: routing, safety, PII, use cases, ViewModels, new data helpers
 ./gradlew :app:testDebugUnitTest
 
-# 18 Firestore emulator rules tests (Node)
+# 19 Firestore emulator rules tests (Node)
 cd rules-tests && npm install && npm test
 
 # Always-on Firebase wiring test + opt-in airplane-mode offline flow
@@ -494,7 +494,7 @@ adb logcat -s LanternOnDevice LanternCloud LanternReports LanternAuth LanternApp
   with each report.
 - [x] **Offline persistence.** Firestore unlimited cache; `hasPendingWrites` drives
   QUEUED → SENT; drafts are local.
-- [x] **Rules.** `firestore.rules` plus 18 emulator tests covering every table row.
+- [x] **Rules.** `firestore.rules` plus 19 emulator tests covering every table row.
 - [x] **Remote Config.** Five keys, safe defaults, real-time updates.
 - [x] **Privacy.** PII scrubbed before every cloud prompt; no coordinates to models.
 - [x] **License visible.** [LICENSE](LICENSE), Apache 2.0.
@@ -537,7 +537,7 @@ device.
   local draft/queue stores.
 - Remote Config with real-time updates, versioned card pack loader, real connectivity.
 - App Check installers for debug/release, Firestore persistence, network permission.
-- Firestore rules + 18 emulator tests, 24 new JVM tests, instrumented wiring/offline tests.
+- Firestore rules + 19 emulator tests, 29 new JVM tests, instrumented wiring/offline tests.
 - Real accuracy report.
 
 ### Still manual

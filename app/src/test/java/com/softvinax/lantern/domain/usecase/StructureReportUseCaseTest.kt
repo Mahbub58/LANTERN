@@ -37,6 +37,17 @@ class StructureReportUseCaseTest {
         assertEquals(5, draft.urgency)
     }
 
+
+    @Test
+    fun `roman urdu landslide is detected`() {
+        val draft = useCase(
+            description = "Zameen khisak gayi, pahar gir raha hai",
+            language = AppLanguage.ROMAN_UR,
+        )
+
+        assertEquals(EmergencyType.LANDSLIDE, draft.type)
+    }
+
     @Test
     fun `low urgency language is respected`() {
         val draft = useCase(

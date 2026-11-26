@@ -9,6 +9,7 @@ import com.softvinax.lantern.domain.model.Report
 import com.softvinax.lantern.domain.model.ReportDraft
 import com.softvinax.lantern.domain.model.ReportStatus
 import com.softvinax.lantern.domain.model.SyncState
+import com.softvinax.lantern.domain.usecase.BuildReportDraftUseCase
 import com.softvinax.lantern.domain.usecase.GetLastKnownLocationUseCase
 import com.softvinax.lantern.domain.usecase.GetReportDraftUseCase
 import com.softvinax.lantern.domain.usecase.ObserveConnectivityUseCase
@@ -24,6 +25,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -71,65 +73,44 @@ class ReportViewModelsTest {
     // ------------------------------------------------------------------ step 1
 
     @Test
-    fun `step one rejects a blank description`() = runTest {
+    fun `step one saves the guided draft and opens review`() = runTest {
         val structure = mockk<StructureReportUseCase>()
         val saveDraft = mockk<SaveReportDraftUseCase>()
-        val location = mockk<GetLastKnownLocationUseCase>()
+        val buildDraft = BuildReportDraftUseCase()
         val observeConnectivity = mockk<ObserveConnectivityUseCase>()
         val observeLanguage = mockk<ObserveLanguageUseCase>()
         every { observeConnectivity() } returns online
         every { observeLanguage() } returns language
+        val saved = slot<ReportDraft>()
+        coEvery { saveDraft(capture(saved)) } answers { saved.captured }
 
         val vm = ReportViewModel(
             savedStateHandle = SavedStateHandle(mapOf("prefill" to "")),
             structureReport = structure,
+            buildDraft = buildDraft,
             saveDraft = saveDraft,
-            getLastKnownLocation = location,
             observeConnectivity = observeConnectivity,
             observeLanguage = observeLanguage,
         )
-        vm.onDescriptionChange("   ")
-
-        vm.continueToReview()
-
-        assertTrue(vm.state.value.blankError)
-        coVerify(exactly = 0) { saveDraft(any()) }
-    }
-
-    @Test
-    fun `step one structures and saves a valid draft then opens review`() = runTest {
-        val structure = mockk<StructureReportUseCase>()
-        val saveDraft = mockk<SaveReportDraftUseCase>()
-        val location = mockk<GetLastKnownLocationUseCase>()
-        val observeConnectivity = mockk<ObserveConnectivityUseCase>()
-        val observeLanguage = mockk<ObserveLanguageUseCase>()
-        every { observeConnectivity() } returns online
-        every { observeLanguage() } returns language
-        coEvery { structure(any(), any(), any(), any()) } returns draft()
-        coEvery { saveDraft(any()) } returns draft()
-
-        val vm = ReportViewModel(
-            savedStateHandle = SavedStateHandle(mapOf("prefill" to "")),
-            structureReport = structure,
-            saveDraft = saveDraft,
-            getLastKnownLocation = location,
-            observeConnectivity = observeConnectivity,
-            observeLanguage = observeLanguage,
-        )
-        vm.onDescriptionChange("Roof cracked, two families trapped")
+        vm.setType(EmergencyType.LANDSLIDE)
+        vm.setPeopleCount(3)
 
         vm.events.test {
             vm.continueToReview()
-            assertEquals(ReportEvent.OpenReview("draft-1"), awaitItem())
+            val event = awaitItem()
+            assertTrue(event is ReportEvent.OpenReview)
+            assertEquals(saved.captured.id, (event as ReportEvent.OpenReview).draftId)
         }
+
+        assertEquals(EmergencyType.LANDSLIDE, saved.captured.type)
+        assertEquals(3, saved.captured.peopleCount)
+        assertTrue(saved.captured.description.isNotBlank())
         assertFalse(vm.state.value.isSaving)
     }
 
     @Test
-    fun `step one prefill is loaded from the route`() = runTest {
-        val structure = mockk<StructureReportUseCase>()
+    fun `step one prefill selects the detected type and needs`() = runTest {
         val saveDraft = mockk<SaveReportDraftUseCase>()
-        val location = mockk<GetLastKnownLocationUseCase>()
         val observeConnectivity = mockk<ObserveConnectivityUseCase>()
         val observeLanguage = mockk<ObserveLanguageUseCase>()
         every { observeConnectivity() } returns online
@@ -137,32 +118,47 @@ class ReportViewModelsTest {
 
         val vm = ReportViewModel(
             savedStateHandle = SavedStateHandle(mapOf("prefill" to "flood water rising")),
-            structureReport = structure,
+            structureReport = StructureReportUseCase(),
+            buildDraft = BuildReportDraftUseCase(),
             saveDraft = saveDraft,
-            getLastKnownLocation = location,
             observeConnectivity = observeConnectivity,
             observeLanguage = observeLanguage,
         )
 
-        assertEquals("flood water rising", vm.state.value.description)
+        assertEquals(EmergencyType.FLOOD, vm.state.value.type)
+        assertEquals(1, vm.state.value.peopleCount)
+        assertTrue(Need.WATER in vm.state.value.needs)
     }
 
-    // ------------------------------------------------------------------ step 2
+    // ------------------------------------------------------------------ steps 2 + 3
+
+    private fun reviewViewModel(
+        getDraft: GetReportDraftUseCase,
+        submit: SubmitReportUseCase,
+        saveDraft: SaveReportDraftUseCase,
+        getLastKnownLocation: GetLastKnownLocationUseCase,
+        observeConnectivity: ObserveConnectivityUseCase,
+    ) = ReportReviewViewModel(
+        savedStateHandle = SavedStateHandle(mapOf("draftId" to "draft-1")),
+        getDraft = getDraft,
+        submitReport = submit,
+        saveDraft = saveDraft,
+        buildDraft = BuildReportDraftUseCase(),
+        getLastKnownLocation = getLastKnownLocation,
+        observeConnectivity = observeConnectivity,
+    )
 
     @Test
     fun `step two loads the draft and clamps edits`() = runTest {
         val getDraft = mockk<GetReportDraftUseCase>()
         val submit = mockk<SubmitReportUseCase>()
+        val saveDraft = mockk<SaveReportDraftUseCase>()
+        val getLocation = mockk<GetLastKnownLocationUseCase>()
         val observeConnectivity = mockk<ObserveConnectivityUseCase>()
         coEvery { getDraft("draft-1") } returns draft()
         every { observeConnectivity() } returns online
 
-        val vm = ReportReviewViewModel(
-            savedStateHandle = SavedStateHandle(mapOf("draftId" to "draft-1")),
-            getDraft = getDraft,
-            submitReport = submit,
-            observeConnectivity = observeConnectivity,
-        )
+        val vm = reviewViewModel(getDraft, submit, saveDraft, getLocation, observeConnectivity)
 
         vm.state.test {
             val loaded = awaitUntil { !it.isLoading }
@@ -185,6 +181,8 @@ class ReportViewModelsTest {
     fun `step two missing draft is reported`() = runTest {
         val getDraft = mockk<GetReportDraftUseCase>()
         val submit = mockk<SubmitReportUseCase>()
+        val saveDraft = mockk<SaveReportDraftUseCase>()
+        val getLocation = mockk<GetLastKnownLocationUseCase>()
         val observeConnectivity = mockk<ObserveConnectivityUseCase>()
         coEvery { getDraft("gone") } returns null
         every { observeConnectivity() } returns online
@@ -193,6 +191,9 @@ class ReportViewModelsTest {
             savedStateHandle = SavedStateHandle(mapOf("draftId" to "gone")),
             getDraft = getDraft,
             submitReport = submit,
+            saveDraft = saveDraft,
+            buildDraft = BuildReportDraftUseCase(),
+            getLastKnownLocation = getLocation,
             observeConnectivity = observeConnectivity,
         )
 
@@ -203,20 +204,42 @@ class ReportViewModelsTest {
     }
 
     @Test
-    fun `step two send emits the new report id`() = runTest {
+    fun `step two review saves the draft and edit returns`() = runTest {
         val getDraft = mockk<GetReportDraftUseCase>()
         val submit = mockk<SubmitReportUseCase>()
+        val saveDraft = mockk<SaveReportDraftUseCase>()
+        val getLocation = mockk<GetLastKnownLocationUseCase>()
+        val observeConnectivity = mockk<ObserveConnectivityUseCase>()
+        coEvery { getDraft("draft-1") } returns draft()
+        coEvery { saveDraft(any()) } returns draft()
+        every { observeConnectivity() } returns online
+
+        val vm = reviewViewModel(getDraft, submit, saveDraft, getLocation, observeConnectivity)
+        vm.state.test { awaitUntil { it.draft != null } }
+
+        vm.next()
+        vm.state.test {
+            val reviewed = awaitUntil { it.step == ReportReviewStep.REVIEW }
+            assertEquals(ReportReviewStep.REVIEW, reviewed.step)
+        }
+        coVerify { saveDraft(any()) }
+
+        vm.editStep()
+        assertEquals(ReportReviewStep.DETAILS, vm.state.value.step)
+    }
+
+    @Test
+    fun `step three send emits the new report id`() = runTest {
+        val getDraft = mockk<GetReportDraftUseCase>()
+        val submit = mockk<SubmitReportUseCase>()
+        val saveDraft = mockk<SaveReportDraftUseCase>()
+        val getLocation = mockk<GetLastKnownLocationUseCase>()
         val observeConnectivity = mockk<ObserveConnectivityUseCase>()
         coEvery { getDraft("draft-1") } returns draft()
         coEvery { submit(any()) } returns report()
         every { observeConnectivity() } returns online
 
-        val vm = ReportReviewViewModel(
-            savedStateHandle = SavedStateHandle(mapOf("draftId" to "draft-1")),
-            getDraft = getDraft,
-            submitReport = submit,
-            observeConnectivity = observeConnectivity,
-        )
+        val vm = reviewViewModel(getDraft, submit, saveDraft, getLocation, observeConnectivity)
         vm.state.test { awaitUntil { it.draft != null } }
 
         vm.events.test {

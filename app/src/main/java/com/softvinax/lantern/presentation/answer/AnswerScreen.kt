@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,8 +28,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -173,28 +176,32 @@ private fun AnswerContent(
     } else {
         val card = answer.card
         if (card != null) {
-            LanternCard {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
                     text = card.title.forLanguage(state.language),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = colors.textPrimary,
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        brush = Brush.linearGradient(colors.primaryGradient),
+                    ),
                 )
-                Spacer(Modifier.height(18.dp))
+                if (state.question.isNotBlank()) {
+                    Text(
+                        text = stringResource(R.string.answer_for_question, state.question),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.textSecondary,
+                    )
+                }
                 Text(
                     text = stringResource(R.string.answer_steps),
                     style = MaterialTheme.typography.titleMedium,
                     color = colors.amber,
                 )
-                Spacer(Modifier.height(12.dp))
                 NumberedSteps(steps = card.steps.forLanguage(state.language))
                 if (card.never.forLanguage(state.language).isNotEmpty()) {
-                    Spacer(Modifier.height(18.dp))
                     NeverDoBox(
                         title = stringResource(R.string.answer_never),
                         items = card.never.forLanguage(state.language),
                     )
                 }
-                Spacer(Modifier.height(16.dp))
                 Text(
                     text = stringResource(R.string.answer_source_verify, card.source),
                     style = MaterialTheme.typography.labelSmall,
@@ -236,23 +243,30 @@ private fun AnswerContent(
     )
 
     if (state.showDeeperButton) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             CloudGradientButton(
-                text = when {
-                    state.isAskingDeeper -> stringResource(R.string.answer_deeper_loading)
-                    !state.isOnline -> stringResource(R.string.answer_deeper_offline)
-                    !state.cloudFallbackEnabled -> stringResource(R.string.answer_cloud_disabled)
-                    else -> stringResource(R.string.answer_deeper)
+                text = if (state.isAskingDeeper) {
+                    stringResource(R.string.answer_deeper_loading)
+                } else {
+                    stringResource(R.string.answer_deeper)
                 },
                 onClick = onAskDeeper,
                 enabled = state.canUseCloud && !state.isAskingDeeper,
                 loading = state.isAskingDeeper,
             )
-            if (state.deeperFailed) {
+            val hint = when {
+                !state.isOnline -> stringResource(R.string.answer_deeper_needs_signal)
+                !state.cloudFallbackEnabled -> stringResource(R.string.answer_cloud_disabled)
+                state.deeperFailed -> stringResource(R.string.answer_deeper_failed)
+                else -> null
+            }
+            if (hint != null) {
                 Text(
-                    text = stringResource(R.string.answer_deeper_failed),
+                    text = hint,
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.textSecondary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }
@@ -261,6 +275,8 @@ private fun AnswerContent(
     PrimaryGradientButton(
         text = stringResource(R.string.answer_file_report),
         onClick = onFileReport,
+        icon = Icons.AutoMirrored.Filled.Send,
+        glow = true,
     )
 
     LanternTextButton(

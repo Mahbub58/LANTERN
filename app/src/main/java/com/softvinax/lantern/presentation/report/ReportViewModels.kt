@@ -9,19 +9,22 @@ import com.softvinax.lantern.domain.model.Need
 import com.softvinax.lantern.domain.model.Report
 import com.softvinax.lantern.domain.model.ReportDraft
 import com.softvinax.lantern.domain.model.ReportLocation
+import com.softvinax.lantern.domain.usecase.BuildReportDraftUseCase
 import com.softvinax.lantern.domain.usecase.GetLastKnownLocationUseCase
 import com.softvinax.lantern.domain.usecase.GetReportDraftUseCase
 import com.softvinax.lantern.domain.usecase.ObserveConnectivityUseCase
 import com.softvinax.lantern.domain.usecase.ObserveLanguageUseCase
-import com.softvinax.lantern.domain.usecase.ObserveReportUseCase
 import com.softvinax.lantern.domain.usecase.ObserveMyReportsUseCase
+import com.softvinax.lantern.domain.usecase.ObserveReportUseCase
 import com.softvinax.lantern.domain.usecase.SaveReportDraftUseCase
 import com.softvinax.lantern.domain.usecase.StructureReportUseCase
 import com.softvinax.lantern.domain.usecase.SubmitReportUseCase
 import com.softvinax.lantern.presentation.navigation.routeString
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,21 +35,18 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 // ---------------------------------------------------------------------------
-// Step 1 — describe
+// Step 1 — type + people
 // ---------------------------------------------------------------------------
 
 data class ReportUiState(
-    val description: String = "",
+    val type: EmergencyType = EmergencyType.FLOOD,
+    val peopleCount: Int = 1,
+    val needs: Set<Need> = emptySet(),
+    val place: String = "",
     val isOnline: Boolean = false,
     val language: AppLanguage = AppLanguage.EN,
-    val shareLocation: Boolean = false,
-    val location: ReportLocation? = null,
-    val locationLabel: String? = null,
-    val isLocating: Boolean = false,
     val isSaving: Boolean = false,
     val hasError: Boolean = false,
-    val blankError: Boolean = false,
-    val locationDenied: Boolean = false,
 )
 
 sealed interface ReportEvent {
@@ -56,15 +56,26 @@ sealed interface ReportEvent {
 @HiltViewModel
 class ReportViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    private val structureReport: StructureReportUseCase,
+    structureReport: StructureReportUseCase,
+    private val buildDraft: BuildReportDraftUseCase,
     private val saveDraft: SaveReportDraftUseCase,
-    private val getLastKnownLocation: GetLastKnownLocationUseCase,
     observeConnectivity: ObserveConnectivityUseCase,
     observeLanguage: ObserveLanguageUseCase,
 ) : ViewModel() {
 
     private val prefill = savedStateHandle.routeString("prefill")
-    private val _state = MutableStateFlow(ReportUiState(description = prefill))
+    private val prefilled = prefill.takeIf { it.isNotBlank() }?.let {
+        runCatching { structureReport(it, AppLanguage.EN) }.getOrNull()
+    }
+
+    private val _state = MutableStateFlow(
+        ReportUiState(
+            type = prefilled?.type ?: EmergencyType.FLOOD,
+            peopleCount = prefilled?.peopleCount ?: 1,
+            needs = prefilled?.needs ?: emptySet(),
+            place = prefilled?.placeDescription.orEmpty(),
+        ),
+    )
     val state: StateFlow<ReportUiState> = _state.asStateFlow()
 
     private val _events = Channel<ReportEvent>(Channel.BUFFERED)
@@ -80,60 +91,28 @@ class ReportViewModel @Inject constructor(
         }
     }
 
-    fun onDescriptionChange(description: String) {
-        _state.update { it.copy(description = description, blankError = false) }
+    fun setType(type: EmergencyType) {
+        _state.update { it.copy(type = type, hasError = false) }
     }
 
-    fun onLocationPermissionGranted() {
-        if (_state.value.isLocating) return
-        _state.update { it.copy(isLocating = true, locationDenied = false) }
-        viewModelScope.launch {
-            runCatching { getLastKnownLocation() }
-                .onSuccess { location ->
-                    _state.update {
-                        it.copy(
-                            isLocating = false,
-                            shareLocation = location != null,
-                            location = location,
-                            locationLabel = location?.placeLabel,
-                        )
-                    }
-                }
-                .onFailure {
-                    _state.update {
-                        it.copy(isLocating = false, shareLocation = false, locationDenied = true)
-                    }
-                }
-        }
-    }
-
-    fun onLocationPermissionDenied() {
-        _state.update {
-            it.copy(shareLocation = false, location = null, locationLabel = null, locationDenied = true)
-        }
-    }
-
-    fun disableLocation() {
-        _state.update {
-            it.copy(shareLocation = false, location = null, locationLabel = null, locationDenied = false)
-        }
+    fun setPeopleCount(count: Int) {
+        _state.update { it.copy(peopleCount = count.coerceIn(1, 99), hasError = false) }
     }
 
     fun continueToReview() {
         val current = _state.value
-        if (current.description.trim().isEmpty()) {
-            _state.update { it.copy(blankError = true) }
-            return
-        }
         if (current.isSaving) return
         _state.update { it.copy(isSaving = true, hasError = false) }
 
         viewModelScope.launch {
             runCatching {
-                val draft = structureReport(
-                    description = current.description,
+                val draft = buildDraft(
+                    type = current.type,
+                    peopleCount = current.peopleCount,
+                    needs = current.needs,
+                    place = current.place,
+                    location = null,
                     language = current.language,
-                    location = if (current.shareLocation) current.location else null,
                 )
                 saveDraft(draft)
             }.onSuccess { saved ->
@@ -147,16 +126,25 @@ class ReportViewModel @Inject constructor(
 }
 
 // ---------------------------------------------------------------------------
-// Step 2 — review + send
+// Steps 2 + 3 — needs/place, then review + send
 // ---------------------------------------------------------------------------
+
+enum class ReportReviewStep {
+    DETAILS,
+    REVIEW,
+}
 
 data class ReportReviewUiState(
     val isLoading: Boolean = true,
     val draft: ReportDraft? = null,
     val isOnline: Boolean = false,
+    val isSaving: Boolean = false,
     val isSending: Boolean = false,
     val hasError: Boolean = false,
     val notFound: Boolean = false,
+    val step: ReportReviewStep = ReportReviewStep.DETAILS,
+    val isLocating: Boolean = false,
+    val locationDenied: Boolean = false,
 )
 
 sealed interface ReportReviewEvent {
@@ -169,6 +157,9 @@ class ReportReviewViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val getDraft: GetReportDraftUseCase,
     private val submitReport: SubmitReportUseCase,
+    private val saveDraft: SaveReportDraftUseCase,
+    private val buildDraft: BuildReportDraftUseCase,
+    private val getLastKnownLocation: GetLastKnownLocationUseCase,
     observeConnectivity: ObserveConnectivityUseCase,
 ) : ViewModel() {
 
@@ -199,7 +190,15 @@ class ReportReviewViewModel @Inject constructor(
 
     fun setType(type: EmergencyType) = edit { it.copy(type = type) }
 
-    fun setUrgency(urgency: Int) = edit { it.copy(urgency = urgency.coerceIn(1, 5)) }
+    fun setUrgency(urgency: Int) {
+        _state.update { current ->
+            val draft = current.draft ?: return@update current
+            current.copy(
+                draft = draft.copy(urgency = urgency.coerceIn(1, 5)),
+                hasError = false,
+            )
+        }
+    }
 
     fun setPeopleCount(count: Int) = edit { it.copy(peopleCount = count.coerceIn(1, 99)) }
 
@@ -212,7 +211,105 @@ class ReportReviewViewModel @Inject constructor(
     private fun edit(transform: (ReportDraft) -> ReportDraft) {
         _state.update { current ->
             val draft = current.draft ?: return@update current
-            current.copy(draft = transform(draft), hasError = false)
+            current.copy(draft = rebuild(transform(draft)), hasError = false)
+        }
+    }
+
+    /** Recomputes urgency + the structured description after an edit. */
+    private fun rebuild(draft: ReportDraft): ReportDraft {
+        val rebuilt = buildDraft(
+            type = draft.type,
+            peopleCount = draft.peopleCount,
+            needs = draft.needs,
+            place = draft.placeDescription,
+            location = draft.location,
+            language = draft.language,
+        )
+        return draft.copy(
+            description = rebuilt.description,
+            urgency = rebuilt.urgency,
+            needs = rebuilt.needs,
+            placeDescription = rebuilt.placeDescription,
+        )
+    }
+
+    fun onLocationPermissionGranted() {
+        if (_state.value.isLocating) return
+        _state.update { it.copy(isLocating = true, locationDenied = false) }
+        viewModelScope.launch {
+            runCatching { getLastKnownLocation() }
+                .onSuccess { location ->
+                    _state.update { current ->
+                        val draft = current.draft
+                        current.copy(
+                            isLocating = false,
+                            locationDenied = location == null,
+                            draft = if (draft != null) {
+                                rebuild(draft.copy(location = location))
+                            } else {
+                                null
+                            },
+                        )
+                    }
+                }
+                .onFailure {
+                    _state.update { current ->
+                        current.copy(
+                            isLocating = false,
+                            locationDenied = true,
+                            draft = current.draft?.copy(location = null),
+                        )
+                    }
+                }
+        }
+    }
+
+    fun onLocationPermissionDenied() {
+        _state.update { current ->
+            current.copy(
+                isLocating = false,
+                locationDenied = true,
+                draft = current.draft?.copy(location = null),
+            )
+        }
+    }
+
+    fun disableLocation() {
+        _state.update { current ->
+            current.copy(
+                locationDenied = false,
+                draft = current.draft?.copy(location = null),
+            )
+        }
+    }
+
+    fun next() {
+        val current = _state.value
+        val draft = current.draft ?: return
+        if (current.isSaving) return
+        _state.update { it.copy(isSaving = true, hasError = false) }
+        viewModelScope.launch {
+            runCatching { saveDraft(draft) }
+                .onSuccess {
+                    _state.update {
+                        it.copy(isSaving = false, step = ReportReviewStep.REVIEW)
+                    }
+                }
+                .onFailure {
+                    _state.update { it.copy(isSaving = false, hasError = true) }
+                }
+        }
+    }
+
+    fun editStep() {
+        _state.update { it.copy(step = ReportReviewStep.DETAILS, hasError = false) }
+    }
+
+    /** Persist the current Step 2 edits before the bottom nav leaves the flow. */
+    fun saveDraftNow() {
+        val draft = _state.value.draft ?: return
+        viewModelScope.launch(NonCancellable + Dispatchers.IO) {
+            runCatching { saveDraft(draft) }
         }
     }
 

@@ -50,6 +50,7 @@ fun typeLabel(type: EmergencyType): String = stringResource(
     when (type) {
         EmergencyType.FLOOD -> R.string.type_flood
         EmergencyType.EARTHQUAKE -> R.string.type_earthquake
+        EmergencyType.LANDSLIDE -> R.string.type_landslide
         EmergencyType.OTHER -> R.string.type_other
     },
 )
@@ -72,7 +73,7 @@ fun needLabel(need: Need): String = stringResource(
 fun LanternTextField(
     value: String,
     onValueChange: (String) -> Unit,
-    label: String,
+    label: String? = null,
     placeholder: String,
     modifier: Modifier = Modifier,
     minLines: Int = 3,
@@ -85,7 +86,7 @@ fun LanternTextField(
         value = value,
         onValueChange = onValueChange,
         modifier = modifier.fillMaxWidth(),
-        label = { Text(label) },
+        label = label?.let { { Text(it) } },
         placeholder = { Text(placeholder) },
         minLines = minLines,
         maxLines = maxLines,
@@ -238,7 +239,7 @@ fun PeopleStepper(
 }
 
 @Composable
-private fun StepButton(
+internal fun StepButton(
     text: String,
     contentDescription: String,
     enabled: Boolean,

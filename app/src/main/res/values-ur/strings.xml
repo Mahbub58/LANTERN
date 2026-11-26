@@ -18,6 +18,8 @@
     <string name="signal_label">سگنل</string>
     <string name="signal_offline">سگنل: آف لائن</string>
     <string name="signal_online">سگنل: آن لائن</string>
+    <string name="status_online_cloud">آن لائن · کلاؤڈ</string>
+    <string name="status_offline_device">آف لائن · ڈیوائس پر</string>
     <string name="offline_mode_footer">آف لائن موڈ فعال · تصدیق شدہ حفاظتی کارڈز اسی فون پر چلتے ہیں</string>
     <string name="online_mode_footer">آن لائن · کلاؤڈ جوابات دستیاب</string>
     <string name="call_emergency_first">اگر ممکن ہو تو پہلے اپنے مقامی ایمرجنسی نمبر پر کال کریں۔</string>
@@ -61,9 +63,16 @@
     <string name="quick_missing_family">خاندان لاپتہ</string>
     <string name="ask_alert_saved">%1$s محفوظ ہوا</string>
     <string name="ask_no_alerts">اس وقت آپ کے علاقے کے لیے کوئی الرٹ نہیں ہے۔</string>
+    <string name="cd_voice_input">اپنا سوال بولیں</string>
+    <string name="cd_voice_stop">سننا بند کریں</string>
+    <string name="voice_listening">سن رہا ہے…</string>
+    <string name="voice_permission_denied">وائس ان پٹ کے لیے مائیکروفون کی اجازت درکار ہے۔</string>
+    <string name="voice_unavailable">اس ڈیوائس پر وائس ان پٹ دستیاب نہیں ہے۔</string>
+    <string name="voice_needs_connection">اس ڈیوائس پر وائس ان پٹ کے لیے کنکشن درکار ہے۔ اپنا سوال لکھیں۔</string>
+    <string name="voice_error">وائس ان پٹ کام نہیں کر سکا۔ اپنا سوال لکھیں۔</string>
 
     <string name="answer_title">جواب</string>
-    <string name="answer_loading">اسی فون پر تصدیق شدہ کارڈز دیکھے جا رہے ہیں…</string>
+    <string name="answer_loading">جواب تیار کیا جا رہا ہے…</string>
     <string name="answer_no_match_title">کوئی تصدیق شدہ کارڈ نہیں ملا</string>
     <string name="answer_no_match_body">اس سوال کے لیے ہمیں کوئی حفاظتی کارڈ نہیں ملا۔ اگر آپ خطرے میں ہیں تو ابھی ایمرجنسی نمبر پر کال کریں۔</string>
     <string name="answer_emergency_numbers">ایمرجنسی نمبر</string>
@@ -71,12 +80,14 @@
     <string name="answer_steps">ابھی یہ کریں</string>
     <string name="answer_never">یہ کبھی نہ کریں</string>
     <string name="answer_source">ماخذ: %1$s</string>
-    <string name="answer_source_verify">ماخذ: %1$s · TO VERIFY</string>
-    <string name="answer_deeper">مزید تفصیلی جواب (کلاؤڈ)</string>
+    <string name="answer_source_verify">ماخذ: %1$s</string>
+    <string name="answer_for_question">سوال: &quot;%1$s&quot;</string>
+    <string name="answer_deeper">مزید جواب</string>
     <string name="answer_deeper_loading">کلاؤڈ سے پوچھا جا رہا ہے…</string>
-    <string name="answer_deeper_offline">کلاؤڈ جواب کے لیے سگنل درکار ہے</string>
-    <string name="answer_deeper_failed">کلاؤڈ جواب دستیاب نہیں تھا۔ اس پروجیکٹ کے لیے جیمنی اے پی آئی بلنگ فعال کریں یا آن ڈیوائس جواب استعمال کریں۔</string>
-    <string name="answer_file_report">رپورٹ درج کریں</string>
+    <string name="answer_deeper_offline">مزید جواب</string>
+    <string name="answer_deeper_needs_signal">سگنل درکار ہے</string>
+    <string name="answer_deeper_failed">کلاؤڈ جواب دستیاب نہیں تھا۔ تھوڑی دیر بعد دوبارہ کوشش کریں یا آن ڈیوائس جواب استعمال کریں۔</string>
+    <string name="answer_file_report">اپنی صورتحال رپورٹ کریں</string>
     <string name="answer_ask_another">دوسرا سوال پوچھیں</string>
     <string name="badge_on_device">اسی فون پر</string>
     <string name="badge_cloud">کلاؤڈ</string>
@@ -168,6 +179,7 @@
     <string name="alerts_offline_note">محفوظ شدہ الرٹس دکھائے جا رہے ہیں۔ نئے الرٹس کے لیے سگنل درکار ہے۔</string>
     <string name="alerts_level_info">معلومات</string>
     <string name="alerts_level_warning">انتباہ</string>
+    <string name="alert_watch">خبردار</string>
     <string name="alerts_level_urgent">ہنگامی</string>
     <string name="alerts_loading">الرٹس لوڈ ہو رہے ہیں…</string>
     <string name="alerts_error">الرٹس لوڈ نہیں ہو سکے۔ محفوظ الرٹس اب بھی دستیاب ہیں۔</string>
@@ -237,4 +249,44 @@
     <string name="cd_report_source">جواب کا ذریعہ: %1$s</string>
     <string name="cd_selected">منتخب</string>
     <string name="cd_debug_title">Lantern۔ ڈیمو پینل کے لیے 7 بار تھپتھپائیں۔</string>
+
+    <!-- Guided report flow -->
+    <string name="report_header">رپورٹ کی صورتحال</string>
+    <string name="report_step_of">مرحلہ %1$d از 3</string>
+    <string name="report_what_happening">کیا ہو رہا ہے؟</string>
+    <string name="report_people_with_you">آپ کے ساتھ لوگ</string>
+    <string name="report_people_hint">اپنے آپ اور بچوں کو شامل کریں</string>
+    <string name="report_next_needs">اگلا: ضروریات اور جگہ</string>
+    <string name="report_what_need">آپ کو کیا ضرورت ہے؟</string>
+    <string name="report_where_are_you">آپ کہاں ہیں؟</string>
+    <string name="report_use_location">میرا مقام استعمال کریں</string>
+    <string name="report_location_off">تقریباً مقام شیئر کرنے کے لیے آن کریں۔</string>
+    <string name="report_location_cached">فون پر محفوظ</string>
+    <string name="report_location_coords">محفوظ GPS · %1$s</string>
+    <string name="report_back">واپس</string>
+    <string name="report_review">رپورٹ کا جائزہ</string>
+    <string name="report_edit">ترمیم</string>
+    <string name="report_check_send">چیک کریں اور بھیجیں</string>
+    <string name="report_structured">اسی فون پر ترتیب دیا گیا</string>
+    <string name="report_type_label">قسم</string>
+    <string name="report_people_label">لوگ</string>
+    <string name="report_needs_label">ضروریات</string>
+    <string name="report_place_label">جگہ</string>
+    <string name="report_needs_none">کچھ منتخب نہیں</string>
+    <string name="report_urgency_pill">شدت %1$d</string>
+    <string name="report_place_placeholder">پل کے قریب، سفید گھر کی دوسری منزل</string>
+    <string name="type_landslide">لینڈ سلائیڈ</string>
+
+    <!-- Alerts redesign -->
+    <string name="alerts_local_title">مقامی الرٹس</string>
+    <string name="alerts_subtitle">لینٹرن ڈیسک سے براہِ راست اپ ڈیٹس</string>
+    <string name="alerts_refresh">تازہ کریں</string>
+    <string name="alerts_filter_all">تمام الرٹس</string>
+    <string name="alerts_filter_warnings">صرف انتباہ</string>
+    <string name="alerts_severity_warning">انتباہ</string>
+    <string name="alerts_severity_watch">خبردار</string>
+    <string name="alerts_severity_clear">سب محفوظ</string>
+    <string name="alerts_no_warnings_title">اس وقت کوئی انتباہ نہیں</string>
+    <string name="alerts_no_warnings_body">معلومات اور سب محفوظ اپ ڈیٹس کے لیے تمام الرٹس منتخب کریں۔</string>
+    <string name="alerts_close">بند کریں</string>
 </resources>

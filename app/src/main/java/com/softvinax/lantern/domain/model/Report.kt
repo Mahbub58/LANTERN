@@ -9,6 +9,7 @@ enum class InferenceSource {
 enum class EmergencyType(val label: String) {
     FLOOD("Flood"),
     EARTHQUAKE("Earthquake"),
+    LANDSLIDE("Landslide"),
     OTHER("Other"),
 }
 

@@ -84,6 +84,14 @@ describe("reports", () => {
     await assertSucceeds(setDoc(doc(db, "reports/new-1"), report(CITIZEN)));
   });
 
+
+  it("allows a landslide report", async () => {
+    const db = testEnv.authenticatedContext(CITIZEN).firestore();
+    await assertSucceeds(
+      setDoc(doc(db, "reports/landslide"), report(CITIZEN, { type: "LANDSLIDE" })),
+    );
+  });
+
   it("denies a report created with someone else's uid", async () => {
     const db = testEnv.authenticatedContext(CITIZEN).firestore();
     await assertFails(setDoc(doc(db, "reports/forged"), report(OTHER)));

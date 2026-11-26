@@ -13,6 +13,8 @@ import com.softvinax.lantern.domain.ai.CloudInference
 import com.softvinax.lantern.domain.ai.GroundedAnswerValidator
 import com.softvinax.lantern.domain.model.AppLanguage
 import com.softvinax.lantern.domain.model.SafetyCard
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -54,16 +56,18 @@ class FirebaseCloudInference @Inject constructor(
         val prompt = AiPrompts.cloud(question, card, language)
         var lastError: Throwable? = null
 
-        repeat(MAX_ATTEMPTS) { attempt ->
+        for (attempt in 0 until MAX_ATTEMPTS) {
             try {
-                val response = model.generateObject(
-                    GeneratedAnswer.firebaseAISchema(),
-                    if (attempt == 0) prompt else "$prompt\nReturn the safety card id and the answer.",
-                )
+                val response = withTimeout(CLOUD_TIMEOUT_MS) {
+                    model.generateObject(
+                        GeneratedAnswer.firebaseAISchema(),
+                        if (attempt == 0) prompt else "$prompt\nReturn the safety card id and the answer.",
+                    )
+                }
                 Log.i(TAG, "inferenceSource=${response.response.inferenceSource} model=${FirebaseAiConfig.CLOUD_MODEL_NAME}")
                 if (response.response.inferenceSource != InferenceSource.IN_CLOUD) {
                     Log.w(TAG, "ONLY_IN_CLOUD returned ${response.response.inferenceSource}")
-                    return@repeat
+                    continue
                 }
                 val generated = response.getObject()
                 if (generated != null && generated.cardId == card.id) {
@@ -76,6 +80,10 @@ class FirebaseCloudInference @Inject constructor(
                 }
                 lastError = IllegalStateException("Cloud answer was not grounded in the card")
                 Log.w(TAG, "Cloud answer rejected: ${generated?.cardId ?: "null"} vs ${card.id}")
+            } catch (t: TimeoutCancellationException) {
+                lastError = t
+                Log.w(TAG, "Cloud request timed out after ${CLOUD_TIMEOUT_MS} ms")
+                break
             } catch (t: Throwable) {
                 lastError = t
                 Log.w(TAG, "Cloud attempt ${attempt + 1} failed", t)
@@ -87,6 +95,7 @@ class FirebaseCloudInference @Inject constructor(
     private companion object {
         const val TAG = "LanternCloud"
         const val MAX_ATTEMPTS = 2
+        const val CLOUD_TIMEOUT_MS = 8_000L
     }
 }
 

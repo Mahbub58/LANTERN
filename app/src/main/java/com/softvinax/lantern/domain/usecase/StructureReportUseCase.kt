@@ -41,10 +41,12 @@ class StructureReportUseCase @Inject constructor() {
     private fun detectType(normalized: String): EmergencyType {
         val floodHits = FLOOD_TERMS.count { normalized.contains(it) }
         val quakeHits = EARTHQUAKE_TERMS.count { normalized.contains(it) }
+        val landslideHits = LANDSLIDE_TERMS.count { normalized.contains(it) }
         return when {
-            floodHits == 0 && quakeHits == 0 -> EmergencyType.OTHER
-            floodHits >= quakeHits -> EmergencyType.FLOOD
-            else -> EmergencyType.EARTHQUAKE
+            floodHits == 0 && quakeHits == 0 && landslideHits == 0 -> EmergencyType.OTHER
+            floodHits >= quakeHits && floodHits >= landslideHits -> EmergencyType.FLOOD
+            quakeHits >= landslideHits -> EmergencyType.EARTHQUAKE
+            else -> EmergencyType.LANDSLIDE
         }
     }
 
@@ -94,6 +96,10 @@ class StructureReportUseCase @Inject constructor() {
         val EARTHQUAKE_TERMS = listOf(
             "earthquake", "quake", "bhukamp", "bhukam", "zalzala", "zameen hili", "jhatka",
             "زلزلہ", "بھوکمپ", "زمین ہلی",
+        )
+        val LANDSLIDE_TERMS = listOf(
+            "landslide", "land slide", "zameen khisak", "zameen khisak gayi", "pahar gir",
+            "pahad gir", "zameen dhans", "لینڈ سلائیڈ", "زمین کھسک", "پہاڑ گر",
         )
         val CRITICAL_TERMS = listOf(
             "trapped", "phansa", "phansi", "drowning", "doob", "bleeding", "dying",

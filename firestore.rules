@@ -32,7 +32,7 @@ service cloud.firestore {
         && data.description.size() > 0
         && data.description.size() <= 500
         && data.language in ['EN', 'UR', 'ROMAN_UR']
-        && data.type in ['FLOOD', 'EARTHQUAKE', 'OTHER']
+        && data.type in ['FLOOD', 'EARTHQUAKE', 'LANDSLIDE', 'OTHER']
         && data.urgency is int
         && data.urgency >= 1
         && data.urgency <= 5

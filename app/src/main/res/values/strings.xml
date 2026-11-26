@@ -19,6 +19,8 @@
     <string name="signal_label">Signal</string>
     <string name="signal_offline">Signal: Offline</string>
     <string name="signal_online">Signal: Online</string>
+    <string name="status_online_cloud">Online · Cloud</string>
+    <string name="status_offline_device">Offline · On-device</string>
     <string name="offline_mode_footer">Offline mode active · Vetted safety cards run on this phone</string>
     <string name="online_mode_footer">Online · Cloud answers available</string>
     <string name="call_emergency_first">Call your local emergency number first if you can.</string>
@@ -65,10 +67,17 @@
     <string name="quick_missing_family">Missing family</string>
     <string name="ask_alert_saved">Saved %1$s</string>
     <string name="ask_no_alerts">No alerts for your area right now.</string>
+    <string name="cd_voice_input">Speak your question</string>
+    <string name="cd_voice_stop">Stop listening</string>
+    <string name="voice_listening">Listening…</string>
+    <string name="voice_permission_denied">Microphone permission is needed for voice input.</string>
+    <string name="voice_unavailable">Voice input is not available on this device.</string>
+    <string name="voice_needs_connection">Voice input needs a connection on this device. Type your question instead.</string>
+    <string name="voice_error">Voice input did not work. Type your question instead.</string>
 
     <!-- Answer -->
     <string name="answer_title">Answer</string>
-    <string name="answer_loading">Checking the vetted cards on this phone…</string>
+    <string name="answer_loading">Preparing your answer…</string>
     <string name="answer_no_match_title">No vetted card matched</string>
     <string name="answer_no_match_body">We could not find a safety card for this question. If you are in danger, call an emergency number now.</string>
     <string name="answer_emergency_numbers">Emergency numbers</string>
@@ -76,12 +85,14 @@
     <string name="answer_steps">Do this now</string>
     <string name="answer_never">Never do this</string>
     <string name="answer_source">Source: %1$s</string>
-    <string name="answer_source_verify">Source: %1$s · TO VERIFY</string>
-    <string name="answer_deeper">Ask a deeper answer (cloud)</string>
+    <string name="answer_source_verify">Source: %1$s</string>
+    <string name="answer_for_question">For: &quot;%1$s&quot;</string>
+    <string name="answer_deeper">Deeper answer</string>
     <string name="answer_deeper_loading">Asking the cloud…</string>
-    <string name="answer_deeper_offline">Cloud answers need a signal</string>
-    <string name="answer_deeper_failed">The cloud answer was unavailable. Enable Gemini API billing for this project, or use the on-device answer.</string>
-    <string name="answer_file_report">File a report</string>
+    <string name="answer_deeper_offline">Deeper answer</string>
+    <string name="answer_deeper_needs_signal">needs signal</string>
+    <string name="answer_deeper_failed">The cloud answer was unavailable. Try again in a moment, or use the on-device answer.</string>
+    <string name="answer_file_report">Report my situation</string>
     <string name="answer_ask_another">Ask another question</string>
     <string name="badge_on_device">On this phone</string>
     <string name="badge_cloud">Cloud</string>
@@ -176,6 +187,7 @@
     <string name="alerts_offline_note">Showing saved alerts. New alerts need a signal.</string>
     <string name="alerts_level_info">Info</string>
     <string name="alerts_level_warning">Warning</string>
+    <string name="alert_watch">WATCH</string>
     <string name="alerts_level_urgent">Urgent</string>
     <string name="alerts_loading">Loading alerts…</string>
     <string name="alerts_error">Could not load alerts. Saved alerts are still available.</string>
@@ -249,4 +261,44 @@
     <string name="cd_report_source">Answer source: %1$s</string>
     <string name="cd_selected">Selected</string>
     <string name="cd_debug_title">Lantern. Tap 7 times for the demo panel.</string>
+
+    <!-- Guided report flow -->
+    <string name="report_header">REPORT SITUATION</string>
+    <string name="report_step_of">STEP %1$d OF 3</string>
+    <string name="report_what_happening">What is happening?</string>
+    <string name="report_people_with_you">People with you</string>
+    <string name="report_people_hint">Include yourself and children</string>
+    <string name="report_next_needs">Next: Needs &amp; place</string>
+    <string name="report_what_need">What do you need?</string>
+    <string name="report_where_are_you">Where are you?</string>
+    <string name="report_use_location">Use my location</string>
+    <string name="report_location_off">Turn on to share an approximate location.</string>
+    <string name="report_location_cached">Cached on phone</string>
+    <string name="report_location_coords">Cached GPS · %1$s</string>
+    <string name="report_back">Back</string>
+    <string name="report_review">Review report</string>
+    <string name="report_edit">Edit</string>
+    <string name="report_check_send">Check and send</string>
+    <string name="report_structured">Structured on this phone</string>
+    <string name="report_type_label">Type</string>
+    <string name="report_people_label">People</string>
+    <string name="report_needs_label">Needs</string>
+    <string name="report_place_label">Place</string>
+    <string name="report_needs_none">None selected</string>
+    <string name="report_urgency_pill">Urgency %1$d</string>
+    <string name="report_place_placeholder">Near the bridge, second floor of the white house</string>
+    <string name="type_landslide">Landslide</string>
+
+    <!-- Alerts redesign -->
+    <string name="alerts_local_title">Local alerts</string>
+    <string name="alerts_subtitle">Live updates from Lantern Desk</string>
+    <string name="alerts_refresh">Refresh</string>
+    <string name="alerts_filter_all">All alerts</string>
+    <string name="alerts_filter_warnings">Warnings only</string>
+    <string name="alerts_severity_warning">Warning</string>
+    <string name="alerts_severity_watch">Watch</string>
+    <string name="alerts_severity_clear">All clear</string>
+    <string name="alerts_no_warnings_title">No warnings right now</string>
+    <string name="alerts_no_warnings_body">Switch to All alerts to see information and all-clear updates.</string>
+    <string name="alerts_close">Close</string>
 </resources>
