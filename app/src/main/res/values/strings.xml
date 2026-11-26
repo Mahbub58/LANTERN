@@ -200,7 +200,7 @@
     <string name="settings_loading">Loading settings…</string>
     <string name="settings_verify_numbers">Numbers are placeholders until responders configure them.</string>
 
-    <string name="nano_ready">Ready (simulated)</string>
+    <string name="nano_ready">Ready</string>
     <string name="nano_not_downloaded">Not downloaded</string>
     <string name="nano_downloading">Downloading…</string>
     <string name="nano_unavailable">Unavailable on this device</string>

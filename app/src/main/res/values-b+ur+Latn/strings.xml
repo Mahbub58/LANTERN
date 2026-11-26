@@ -191,7 +191,7 @@
     <string name="settings_loading">Settings load ho rahi hain…</string>
     <string name="settings_verify_numbers">Numbers aarzi hain jab tak responders inhein tarteeb na dein.</string>
 
-    <string name="nano_ready">Tayyar (simulated)</string>
+    <string name="nano_ready">Tayyar</string>
     <string name="nano_not_downloaded">Download nahi hua</string>
     <string name="nano_downloading">Download ho raha hai…</string>
     <string name="nano_unavailable">Is device par dastyab nahi</string>

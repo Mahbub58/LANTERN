@@ -191,7 +191,7 @@
     <string name="settings_loading">ترتیبات لوڈ ہو رہی ہیں…</string>
     <string name="settings_verify_numbers">نمبر عارضی ہیں جب تک امدادی ٹیمیں انہیں ترتیب نہ دیں۔</string>
 
-    <string name="nano_ready">تیار (نقلی)</string>
+    <string name="nano_ready">تیار</string>
     <string name="nano_not_downloaded">ڈاؤن لوڈ نہیں ہوا</string>
     <string name="nano_downloading">ڈاؤن لوڈ ہو رہا ہے…</string>
     <string name="nano_unavailable">اس ڈیوائس پر دستیاب نہیں</string>
