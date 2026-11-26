@@ -80,7 +80,7 @@
     <string name="answer_deeper">Ask a deeper answer (cloud)</string>
     <string name="answer_deeper_loading">Asking the cloud…</string>
     <string name="answer_deeper_offline">Cloud answers need a signal</string>
-    <string name="answer_deeper_failed">The cloud answer was unavailable. Showing the vetted card instead.</string>
+    <string name="answer_deeper_failed">The cloud answer was unavailable. Enable Gemini API billing for this project, or use the on-device answer.</string>
     <string name="answer_file_report">File a report</string>
     <string name="answer_ask_another">Ask another question</string>
     <string name="badge_on_device">On this phone</string>

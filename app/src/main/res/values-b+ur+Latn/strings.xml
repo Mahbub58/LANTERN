@@ -75,7 +75,7 @@
     <string name="answer_deeper">Mazeed tafseeli jawab (cloud)</string>
     <string name="answer_deeper_loading">Cloud se poochha ja raha hai…</string>
     <string name="answer_deeper_offline">Cloud jawab ke liye signal zaroori hai</string>
-    <string name="answer_deeper_failed">Cloud jawab dastyab nahi tha. Verified card dikhaya ja raha hai.</string>
+    <string name="answer_deeper_failed">Cloud jawab dastyab nahi tha. Is project ke liye Gemini API billing enable karein ya on-device jawab use karein.</string>
     <string name="answer_file_report">Report darj karein</string>
     <string name="answer_ask_another">Doosra sawal poochhein</string>
     <string name="badge_on_device">Isi phone par</string>

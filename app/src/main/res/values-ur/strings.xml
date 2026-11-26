@@ -75,7 +75,7 @@
     <string name="answer_deeper">مزید تفصیلی جواب (کلاؤڈ)</string>
     <string name="answer_deeper_loading">کلاؤڈ سے پوچھا جا رہا ہے…</string>
     <string name="answer_deeper_offline">کلاؤڈ جواب کے لیے سگنل درکار ہے</string>
-    <string name="answer_deeper_failed">کلاؤڈ جواب دستیاب نہیں تھا۔ تصدیق شدہ کارڈ دکھایا جا رہا ہے۔</string>
+    <string name="answer_deeper_failed">کلاؤڈ جواب دستیاب نہیں تھا۔ اس پروجیکٹ کے لیے جیمنی اے پی آئی بلنگ فعال کریں یا آن ڈیوائس جواب استعمال کریں۔</string>
     <string name="answer_file_report">رپورٹ درج کریں</string>
     <string name="answer_ask_another">دوسرا سوال پوچھیں</string>
     <string name="badge_on_device">اسی فون پر</string>
