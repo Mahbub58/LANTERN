@@ -22,7 +22,26 @@ class LexicalSafetyCardRetriever @Inject constructor() {
         return cards
             .map { ScoredCard(it, score(question, it)) }
             .filter { it.score > 0f }
-            .maxWithOrNull(compareBy<ScoredCard> { it.score }.thenBy { it.card.id })
+            .maxWithOrNull(
+                compareBy<ScoredCard> { it.score }
+                    // A longer matching keyword is more specific: prefer "flood water"
+                    // over "flood" when both score the same.
+                    .thenBy { matchedKeywordTokens(question, it.card) }
+                    .thenByDescending { it.card.id },
+            )
+    }
+
+    /** Token count of the longest keyword that the question actually matches. */
+    private fun matchedKeywordTokens(question: String, card: SafetyCard): Int {
+        val questionNormalized = TextNormalizer.normalize(question)
+        val questionTokens = TextNormalizer.significantTokens(question).toSet()
+        return card.allKeywords().maxOfOrNull { keyword ->
+            val keywordTokens = TextNormalizer.significantTokens(keyword)
+            val matches = keywordTokens.isNotEmpty() &&
+                (TextNormalizer.containsPhrase(questionNormalized, TextNormalizer.normalize(keyword)) ||
+                    keywordTokens.all { it in questionTokens })
+            if (matches) keywordTokens.size else 0
+        } ?: 0
     }
 
     fun score(question: String, card: SafetyCard): Float {
