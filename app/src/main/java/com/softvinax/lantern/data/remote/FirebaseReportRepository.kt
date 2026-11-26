@@ -19,6 +19,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -89,12 +91,27 @@ class FirebaseReportRepository @Inject constructor(
             }
         }
         // Keep a local copy until the server acknowledges the write. This means
-        // a rejected write is never silently lost.
+        // a rejected write (Auth/App Check/rules still being configured) is
+        // never silently lost.
         scope.launch {
             remoteReports.collect { remote ->
                 localQueue.removeAll(
                     remote.filter { it.syncState == SyncState.SENT }.map { it.id }.toSet(),
                 )
+            }
+        }
+        // Retry the queue while the app is running. This makes the demo recover
+        // automatically after the console debug token is registered or Auth is
+        // enabled, without restarting the app.
+        scope.launch {
+            while (isActive) {
+                delay(RETRY_INTERVAL_MS)
+                if (localQueue.snapshot().isEmpty()) continue
+                if (!connectivityRepository.isOnline.first()) continue
+                val uid = runCatching { authRepository.ensureAnonymousUid() }.getOrNull()
+                    ?: continue
+                Log.i(TAG, "Retrying ${localQueue.snapshot().size} queued report(s)")
+                flushLocalQueue(uid)
             }
         }
     }
@@ -144,18 +161,21 @@ class FirebaseReportRepository @Inject constructor(
             needs = safe.needs,
             placeDescription = safe.placeDescription,
             location = safe.location,
-            syncState = if (online && uid != null) SyncState.SENT else SyncState.QUEUED,
+            // Always start QUEUED. The Firestore snapshot flips it to SENT only
+            // after the server acknowledges the write.
+            syncState = SyncState.QUEUED,
             status = ReportStatus.NEW,
             createdAt = now,
             updatedAt = now,
-            // Optimistic; the sync badge is driven by Firestore metadata.
             sentAt = now,
         )
 
+        // Local-first: the report is visible and durable even if Auth, App
+        // Check or the rules are not ready yet.
+        localQueue.add(report)
+        Log.i(TAG, "submit id=$id uid=${uid != null} online=$online queued=${localQueue.snapshot().size}")
         if (uid != null) {
             writeReport(report, uid)
-        } else {
-            localQueue.add(report)
         }
         draftStore.discard(safe.id)
         return report
@@ -188,6 +208,7 @@ class FirebaseReportRepository @Inject constructor(
     }
 
     private fun writeReport(report: Report, uid: String) {
+        Log.i(TAG, "writeReport id=${report.id} uid=$uid")
         runCatching {
             db.collection(COLLECTION)
                 .document(report.id)
@@ -201,13 +222,14 @@ class FirebaseReportRepository @Inject constructor(
     }
 
     private suspend fun flushLocalQueue(uid: String) {
-        localQueue.snapshot().forEach { report ->
-            writeReport(report, uid)
-        }
+        val pending = localQueue.snapshot()
+        if (pending.isNotEmpty()) Log.i(TAG, "flushLocalQueue size=${pending.size}")
+        pending.forEach { report -> writeReport(report, uid) }
     }
 
     private companion object {
         const val TAG = "LanternReports"
         const val COLLECTION = "reports"
+        const val RETRY_INTERVAL_MS = 30_000L
     }
 }
