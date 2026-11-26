@@ -1,12 +1,12 @@
 package com.softvinax.lantern.di
 
-import com.softvinax.lantern.data.fake.FakeAlertRepository
-import com.softvinax.lantern.data.fake.FakeAuthRepository
-import com.softvinax.lantern.data.fake.FakeConfigRepository
-import com.softvinax.lantern.data.fake.FakeConnectivityRepository
-import com.softvinax.lantern.data.fake.FakeLocationRepository
-import com.softvinax.lantern.data.fake.FakeReportRepository
-import com.softvinax.lantern.data.fake.FakeSafetyCardRepository
+import com.softvinax.lantern.data.remote.AndroidConnectivityRepository
+import com.softvinax.lantern.data.remote.AndroidLocationRepository
+import com.softvinax.lantern.data.remote.FirebaseAlertRepository
+import com.softvinax.lantern.data.remote.FirebaseAuthRepository
+import com.softvinax.lantern.data.remote.FirebaseConfigRepository
+import com.softvinax.lantern.data.remote.FirebaseReportRepository
+import com.softvinax.lantern.data.remote.FirebaseSafetyCardRepository
 import com.softvinax.lantern.domain.repository.AlertRepository
 import com.softvinax.lantern.domain.repository.AuthRepository
 import com.softvinax.lantern.domain.repository.ConfigRepository
@@ -22,8 +22,8 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 /**
- * PHASE 2 SWAP POINT: replace each fake with the real implementation here.
- * Presentation and domain never see these classes.
+ * Real Firebase implementations. Presentation and domain never see these
+ * classes; tests keep using the fakes in data/fake directly.
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -31,33 +31,33 @@ abstract class DataModule {
 
     @Binds
     @Singleton
-    abstract fun bindSafetyCardRepository(impl: FakeSafetyCardRepository): SafetyCardRepository
+    abstract fun bindSafetyCardRepository(impl: FirebaseSafetyCardRepository): SafetyCardRepository
 
     @Binds
     @Singleton
-    abstract fun bindReportRepository(impl: FakeReportRepository): ReportRepository
+    abstract fun bindReportRepository(impl: FirebaseReportRepository): ReportRepository
 
     @Binds
     @Singleton
-    abstract fun bindAlertRepository(impl: FakeAlertRepository): AlertRepository
+    abstract fun bindAlertRepository(impl: FirebaseAlertRepository): AlertRepository
 
     @Binds
     @Singleton
-    abstract fun bindConfigRepository(impl: FakeConfigRepository): ConfigRepository
+    abstract fun bindConfigRepository(impl: FirebaseConfigRepository): ConfigRepository
 
     @Binds
     @Singleton
-    abstract fun bindConnectivityRepository(impl: FakeConnectivityRepository): ConnectivityRepository
+    abstract fun bindConnectivityRepository(impl: AndroidConnectivityRepository): ConnectivityRepository
 
     @Binds
     @Singleton
-    abstract fun bindNetworkSimulator(impl: FakeConnectivityRepository): NetworkSimulator
+    abstract fun bindNetworkSimulator(impl: AndroidConnectivityRepository): NetworkSimulator
 
     @Binds
     @Singleton
-    abstract fun bindAuthRepository(impl: FakeAuthRepository): AuthRepository
+    abstract fun bindAuthRepository(impl: FirebaseAuthRepository): AuthRepository
 
     @Binds
     @Singleton
-    abstract fun bindLocationRepository(impl: FakeLocationRepository): LocationRepository
+    abstract fun bindLocationRepository(impl: AndroidLocationRepository): LocationRepository
 }
