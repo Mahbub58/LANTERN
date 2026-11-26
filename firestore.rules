@@ -1,0 +1,77 @@
+rules_version = '2';
+
+// Lantern citizen app.
+//
+// reports:    a citizen can create a report with their own uid and read only
+//             their own reports. No client updates or deletes.
+// alerts:     readable by any signed-in citizen, written only by the console
+//             or the Admin SDK (responder desk).
+// responders: never readable by the citizen client.
+// config:     the versioned safety-card pack is readable by signed-in citizens
+//             and writable only by the Admin SDK.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function owns(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function validReport() {
+      let data = request.resource.data;
+      return data.keys().hasOnly([
+          'uid', 'description', 'language', 'type', 'urgency', 'peopleCount',
+          'needs', 'placeDescription', 'location', 'status', 'createdAt',
+          'updatedAt', 'sentAt'
+        ])
+        && data.uid is string
+        && data.description is string
+        && data.description.size() > 0
+        && data.description.size() <= 500
+        && data.language in ['EN', 'UR', 'ROMAN_UR']
+        && data.type in ['FLOOD', 'EARTHQUAKE', 'OTHER']
+        && data.urgency is int
+        && data.urgency >= 1
+        && data.urgency <= 5
+        && data.peopleCount is int
+        && data.peopleCount >= 1
+        && data.peopleCount <= 99
+        && data.needs is list
+        && data.needs.size() <= 8
+        && data.placeDescription is string
+        && data.placeDescription.size() <= 120
+        && data.status in ['NEW', 'ASSIGNED', 'RESOLVED']
+        && data.createdAt is int
+        && data.updatedAt is int
+        && (data.sentAt == null || data.sentAt is int)
+        && (data.location == null || (
+          data.location is map
+          && data.location.latitude is number
+          && data.location.longitude is number
+        ));
+    }
+
+    match /reports/{reportId} {
+      allow create: if owns(request.resource.data.uid) && validReport();
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    match /alerts/{alertId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    match /responders/{responderId} {
+      allow read, write: if false;
+    }
+
+    match /config/{docId} {
+      allow read: if signedIn() && docId == 'safety_cards';
+      allow write: if false;
+    }
+  }
+}
