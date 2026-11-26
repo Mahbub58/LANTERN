@@ -107,7 +107,7 @@ class SettingsViewModel @Inject constructor(
 
     fun retry() = load()
 
-    fun setLanguage(language: AppLanguage) {
+    fun selectLanguage(language: AppLanguage) {
         if (_state.value.isSaving) return
         _state.update { it.copy(isSaving = true, hasError = false) }
         viewModelScope.launch {

@@ -116,8 +116,8 @@ fun ReportReviewScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .imePadding()
-                    .verticalScroll(rememberScrollState())
                     .navigationBarsPadding()
+                    .verticalScroll(rememberScrollState())
                     .padding(horizontal = 20.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {

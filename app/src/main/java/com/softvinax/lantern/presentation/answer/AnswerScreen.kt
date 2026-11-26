@@ -96,7 +96,8 @@ fun AnswerScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.background),
+            .background(colors.background)
+            .navigationBarsPadding(),
     ) {
         LanternTopBar(
             title = stringResource(R.string.answer_title),
@@ -108,7 +109,6 @@ fun AnswerScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .navigationBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {

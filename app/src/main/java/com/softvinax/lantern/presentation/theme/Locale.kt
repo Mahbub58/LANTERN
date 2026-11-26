@@ -4,16 +4,22 @@ import android.content.res.Configuration
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.unit.LayoutDirection
 import com.softvinax.lantern.domain.model.AppLanguage
 import java.util.Locale
 
 /**
- * In-app language + RTL. Wraps [LocalContext] with a locale-overridden context so
- * `stringResource` resolves from values/, values-ur/ and values-b+ur+Latn/ without
- * restarting the activity or requiring AppCompat.
+ * In-app language + RTL without restarting the activity and without AppCompat.
+ *
+ * Only the resource lookups are redirected: [LocalResources] resolves from
+ * `values/`, `values-ur/` and `values-b+ur+Latn/`, and [LocalConfiguration] carries the
+ * locale for anything that formats dates or numbers. [LocalContext] intentionally stays
+ * the Activity so `hiltViewModel()` keeps finding the activity-scoped factory and so
+ * `startActivity` (dialer, share sheet) runs from an Activity context.
  */
 @Composable
 fun ProvideAppLanguage(
@@ -21,21 +27,25 @@ fun ProvideAppLanguage(
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
-    val localizedContext = remember(language, context) {
-        val locale = when (language) {
+    val locale = remember(language) {
+        when (language) {
             AppLanguage.EN -> Locale.forLanguageTag("en")
             AppLanguage.UR -> Locale.forLanguageTag("ur")
             AppLanguage.ROMAN_UR -> Locale.forLanguageTag("ur-Latn")
         }
+    }
+    val localizedResources = remember(locale, context) {
         val configuration = Configuration(context.resources.configuration).apply {
             setLocale(locale)
             setLayoutDirection(locale)
         }
-        context.createConfigurationContext(configuration)
+        context.createConfigurationContext(configuration).resources
     }
     val direction = if (language == AppLanguage.UR) LayoutDirection.Rtl else LayoutDirection.Ltr
+
     CompositionLocalProvider(
-        LocalContext provides localizedContext,
+        LocalResources provides localizedResources,
+        LocalConfiguration provides localizedResources.configuration,
         LocalLayoutDirection provides direction,
         content = content,
     )
