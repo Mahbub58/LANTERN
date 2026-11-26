@@ -22,9 +22,11 @@ on the phone or Gemini in the cloud, and damage reports queue locally and sync t
   The response's `inferenceSource` is logged, and the UI badge is driven by the router's
   `InferenceSource`.
 - **Anonymous Firebase Auth.** A uid is created on first launch; reports are scoped to it.
-- **Firestore, local-first.** Unlimited offline persistence. `submit()` writes immediately;
-  the sync badge is derived from `snapshot.metadata.hasPendingWrites` (QUEUED → SENT).
-  Citizens can create reports and read only their own.
+- **Firestore, local-first.** Unlimited offline persistence. Every report is written to a
+  local queue first, then to Firestore; it is removed from the queue only after the server
+  acknowledges the write. A 30-second retry recovers after Auth/App Check are fixed without
+  restarting the app. The sync badge is derived from `snapshot.metadata.hasPendingWrites`
+  (QUEUED → SENT). Citizens can create reports and read only their own.
 - **Remote Config, live.** `confidence_threshold`, `cloud_fallback_enabled`, `alert_level`,
   `emergency_numbers_json`, `cards_version` with safe in-app defaults and real-time updates.
 - **App Check.** Debug provider for the judges' build, Play Integrity for release. App Check
@@ -117,11 +119,12 @@ Firebase.ai(backend = GenerativeBackend.googleAI())
 ```
 
 - Single-turn text only: no chat history is created or sent.
-- The prompt is short, card-grounded and forces
-  `{"cardId":"…","answer":"…"}`. `ModelJson` extracts the first JSON object defensively
-  (handles code fences, prose around the object and braces inside strings).
-- One retry on malformed output or a model error, then the exception reaches `AiRouter`,
-  which falls back to cloud (if allowed) or the vetted card text.
+- The answer uses AI Logic **structured output**: a `@Generable` data class plus the
+  `firebase-ai-ksp-processor` generates the schema, so the `cardId`/`answer` contract is
+  enforced by the SDK instead of trusting a "please return JSON" prompt. The defensive
+  `ModelJson` extractor remains for the cloud-only desk tasks.
+- One retry on a model or schema error, then the exception reaches `AiRouter`, which falls
+  back to cloud (if allowed) or the vetted card text.
 - `response.inferenceSource` is logged as `LanternOnDevice: inferenceSource=ON_DEVICE`.
 - The status flow maps `OnDeviceModelStatus` to the existing `NanoStatus` enum, so the
   Settings screen shows **Ready / Downloading / Not downloaded / Unavailable**. A
@@ -141,8 +144,9 @@ Firebase.ai(backend = GenerativeBackend.googleAI())
 - The question has already passed through `PiiScrubber` in `AiRouter`.
 - The prompt contains only the scrubbed question and the retrieved card. No coordinates,
   uid, device id or exact address.
-- The cloud answer goes through `GroundedAnswerValidator` before the router accepts it.
-  A drifting answer is rejected and the card text is shown instead.
+- The cloud answer uses the same `@Generable` schema and goes through
+  `GroundedAnswerValidator` before the router accepts it. A drifting answer is rejected and
+  the card text is shown instead.
 - `response.inferenceSource` is logged as `LanternCloud: inferenceSource=IN_CLOUD`.
 
 ### Cloud-only desk tasks (Phase 3)
@@ -158,6 +162,7 @@ It is not wired to the citizen UI; it is the seam for the responder Desk. It use
 | `firebase-bom` | 35.2.0 | Auth 25.0.0, Firestore 27.2.0, Config 24.0.1, App Check 20.1.0 |
 | `firebase-ai` | 18.2.0 | Hybrid API, `onDeviceExtension`, `inferenceSource` |
 | `firebase-ai-ondevice` | 16.0.0-beta08 | Prompt API via ML Kit; **not** in the BoM |
+| `firebase-ai-ksp-processor` | 17.0.0 | Generates the `@Generable` schema used by both paths |
 | `com.google.gms.google-services` | 4.6.0 | |
 | Kotlin / KSP | 2.4.0 / 2.3.14 | The on-device SDK ships Kotlin 2.4 metadata; AGP 9's built-in KGP is upgraded in `build.gradle.kts` |
 
@@ -204,6 +209,17 @@ rules-tests/                              Node emulator rules tests (18)
 ---
 
 ## Setup
+
+### 0. One-command debug setup (after `firebase login`)
+
+```bash
+npx --yes firebase-tools@15.37.0 login
+./scripts/firebase_setup.sh
+```
+
+The script reads the current App Check debug token from logcat, registers it, deploys
+`firestore.rules`, and prints the remaining console links. It never writes the token to the
+repository.
 
 ### 1. Firebase project file
 
@@ -442,11 +458,34 @@ These are domain-level limitations to fix in Phase 3; they are not hidden by the
 
 ---
 
+## Troubleshooting (the failures seen on the emulator)
+
+| Symptom | Log line | Cause | Fix |
+| --- | --- | --- | --- |
+| Report stays **Queued**, no `reports` doc | `LanternReports: submit ... uid=false` or `LanternAuth: ... CONFIGURATION_NOT_FOUND` | Anonymous Auth is disabled | Authentication → Sign-in method → **Anonymous → Enable** |
+| Firestore/AI calls rejected | `FirebaseAppCheck: Debug token was rejected by server` | Debug token not registered | `./scripts/firebase_setup.sh`, or register the token from logcat |
+| Cloud answer falls back to card text | `LanternCloud: ... The Gemini API free tier is not available for this project` | The project has no Gemini API free tier | Enable billing at <https://aistudio.google.com/billing>, or use a project with a free tier |
+| On-device answer falls back to card text | `LanternOnDevice: OnDeviceModelStatus=UNAVAILABLE` | Emulator/unsupported device, or Nano not downloaded/enrolled | Use a supported physical device and enroll in the AICore Developer Preview |
+| Firestore `PERMISSION_DENIED` | `Report write rejected` | Rules not deployed or App Check token rejected | Deploy `firestore.rules` and register the token |
+
+The on-device SDK is wired correctly. On a supported device the log shows
+`onDeviceExtension=true` and `OnDeviceModelStatus=AVAILABLE`; on the Android emulator it
+shows `UNAVAILABLE` because emulators do not ship AICore/Gemini Nano. That is a hardware
+limitation, not a code fallback.
+
+Diagnostics:
+
+```bash
+adb logcat -s LanternOnDevice LanternCloud LanternReports LanternAuth LanternApp DebugAppCheckProvider
+```
+
+---
+
 ## Contest checklist
 
 - [x] **AI Logic called at runtime.** `FirebaseOnDeviceInference` and
-  `FirebaseCloudInference` call `generateContent` on a `GenerativeModel`; the on-device
-  pass is `ONLY_ON_DEVICE` with `OnDeviceModelOption.PREVIEW` (Nano 4).
+  `FirebaseCloudInference` call `generateObject`/`generateContent` on a `GenerativeModel`;
+  the on-device pass is `ONLY_ON_DEVICE` with `OnDeviceModelOption.PREVIEW` (Nano 4).
 - [x] **Hybrid routing stays in the app.** The router owns escalation; on-device exceptions
   become cloud calls only when online and `cloud_fallback_enabled`.
 - [x] **App Check.** Debug provider in debug, Play Integrity in release, installed before AI
@@ -465,18 +504,26 @@ These are domain-level limitations to fix in Phase 3; they are not hidden by the
 
 ### Still manual (console steps)
 
-1. Register the App Check debug token printed by `adb logcat -s DebugAppCheckProvider`.
-2. Enable **Anonymous** sign-in.
+1. Register the App Check debug token printed by `adb logcat -s DebugAppCheckProvider`
+   (or run `./scripts/firebase_setup.sh` after `firebase login`).
+2. Enable **Anonymous** sign-in:
+   <https://console.firebase.google.com/project/hackathon-258dd/authentication/providers>
 3. Enable **AI Logic** with the Gemini Developer API provider.
-4. Enforce App Check on **AI Logic** and **Cloud Firestore**.
-5. Deploy `firestore.rules`.
+4. Enforce App Check on **AI Logic** and **Cloud Firestore**:
+   <https://console.firebase.google.com/project/hackathon-258dd/appcheck/apis>
+5. Deploy `firestore.rules` (`./scripts/firebase_setup.sh` does this).
 6. Create the five Remote Config keys (optional for the demo, required for live control).
-7. Enroll the test device in the **AICore Developer Preview** for Gemini Nano 4.
+7. Enroll the test device in the **AICore Developer Preview** for Gemini Nano 4:
+   <https://developers.google.com/ml-kit/genai/aicore-dev-preview>
 8. Configure **Play Integrity** for the release build.
 9. Optional: publish `config/safety_cards` for a newer card pack.
+10. If cloud answers are required, enable Gemini API billing for the project:
+    <https://aistudio.google.com/billing>. The on-device path does not need billing.
 
 The live instrumented test cannot pass until steps 1–3 are done; it currently fails at
 anonymous sign-in with `CONFIGURATION_NOT_FOUND` on a project where Auth is not enabled.
+The emulator cannot run Gemini Nano; test the on-device path on a supported physical
+device.
 
 ---
 
@@ -484,8 +531,10 @@ anonymous sign-in with `CONFIGURATION_NOT_FOUND` on a project where Auth is not 
 
 ### Done in Phase 2
 
-- Firebase AI Logic on-device + cloud adapters, prompts, defensive JSON, one retry.
-- Anonymous Auth, Firestore reports/alerts, local-first sync, local draft/queue stores.
+- Firebase AI Logic on-device + cloud adapters with `@Generable` structured output,
+  prompts, defensive JSON and one retry.
+- Anonymous Auth, Firestore reports/alerts, always-local-first queue with 30s retry,
+  local draft/queue stores.
 - Remote Config with real-time updates, versioned card pack loader, real connectivity.
 - App Check installers for debug/release, Firestore persistence, network permission.
 - Firestore rules + 18 emulator tests, 24 new JVM tests, instrumented wiring/offline tests.
