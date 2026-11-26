@@ -1,0 +1,41 @@
+id,language,question,expected_card_id
+r01,roman,"ghar ke andar pani aa gaya hai, kya karun",flood-water-entering-home
+r02,roman,"ghar mein pani bhar gaya hai",flood-water-entering-home
+r03,roman,"pani andar aa raha hai ghar mein",flood-water-entering-home
+r04,roman,"nadi ka pani tezi se barh raha hai",flood-water-rising
+r05,roman,"flood ka pani barh raha hai",flood-water-rising
+r06,roman,"selab aa raha hai, pani ki satah upar ja rahi hai",flood-water-rising
+r07,roman,"pani ki satah barh rahi hai",flood-water-rising
+r08,roman,"flood ke baad peene ka pani safe hai ya nahi",flood-drinking-water
+r09,roman,"mehfooz pani kaise banayein",flood-drinking-water
+r10,roman,"kya pani ubal kar peena chahiye",flood-drinking-water
+r11,roman,"zameen kaamp rahi hai, zalzala aa raha hai",earthquake-shaking-now
+r12,roman,"zameen hil rahi hai",earthquake-shaking-now
+r13,roman,"bhukamp aa gaya",earthquake-shaking-now
+r14,roman,"zalzala abhi hua, kya karun",earthquake-shaking-now
+r15,roman,"zalzale ke baad kya karein",earthquake-after
+r16,roman,"aftershock ke baad ghar mein wapas jaun",earthquake-after
+r17,roman,"zalzala ke baad imarat check karni chahiye",earthquake-after
+r18,roman,"malbe ke neeche phansa hua hoon",earthquake-trapped
+r19,roman,"imarat gir gayi hai, log andar hain",earthquake-trapped
+r20,roman,"phans gaye hain malbe mein",earthquake-trapped
+u01,ur,"گھر کے اندر پانی آ گیا ہے",flood-water-entering-home
+u02,ur,"گھر میں پانی بھر گیا ہے",flood-water-entering-home
+u03,ur,"دریا کا پانی تیزی سے بڑھ رہا ہے",flood-water-rising
+u04,ur,"پانی کی سطح بڑھ رہی ہے",flood-water-rising
+u05,ur,"سیلاب کے بعد پینے کا پانی محفوظ ہے؟",flood-drinking-water
+u06,ur,"پانی ابال کر پینا چاہیے",flood-drinking-water
+u07,ur,"زمین کانپ رہی ہے، زلزلہ آ رہا ہے",earthquake-shaking-now
+u08,ur,"زمین ہل رہی ہے",earthquake-shaking-now
+u09,ur,"زلزلے کے بعد کیا کریں",earthquake-after
+u10,ur,"عمارت ملبے میں دب گئی ہے",earthquake-trapped
+e01,en,"water is coming into my house",flood-water-entering-home
+e02,en,"the river is overflowing near our street",flood-water-rising
+e03,en,"flood water rising",flood-water-rising
+e04,en,"the water level is going up fast",flood-water-rising
+e05,en,"can we drink the tap water after the flood",flood-drinking-water
+e06,en,"boil water after flood",flood-drinking-water
+e07,en,"the ground shook and things fell",earthquake-shaking-now
+e08,en,"ground is shaking",earthquake-shaking-now
+e09,en,"what to do after an earthquake",earthquake-after
+e10,en,"someone is buried under the rubble",earthquake-trapped
