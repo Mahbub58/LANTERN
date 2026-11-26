@@ -79,6 +79,7 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.ai)
     implementation(libs.firebase.ai.ondevice)
+    ksp(libs.firebase.ai.ksp.processor)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.config)

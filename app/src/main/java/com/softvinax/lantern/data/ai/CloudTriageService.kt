@@ -30,7 +30,7 @@ class CloudTriageService @Inject constructor(
     private val model: GenerativeModel by lazy {
         Firebase.ai(backend = GenerativeBackend.googleAI())
             .generativeModel(
-                modelName = CLOUD_MODEL_NAME,
+                modelName = FirebaseAiConfig.CLOUD_MODEL_NAME,
                 onDeviceConfig = OnDeviceConfig(
                     mode = InferenceMode.ONLY_IN_CLOUD,
                     maxOutputTokens = 512,
@@ -77,6 +77,5 @@ class CloudTriageService @Inject constructor(
 
     private companion object {
         const val TAG = "LanternTriage"
-        const val CLOUD_MODEL_NAME = "gemini-3.8-flash"
     }
 }

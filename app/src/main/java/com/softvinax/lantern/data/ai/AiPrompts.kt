@@ -22,8 +22,7 @@ internal object AiPrompts {
         Never include links, names, phone numbers or addresses.
         Keep the answer under 70 words.
         Reply in ${languageName(language)}.
-        Return ONLY one JSON object, no markdown:
-        {"cardId":"${card.id}","answer":"..."}
+        Return the safety card id and the answer.
 
         SAFETY CARD (${card.id}):
         ${card.groundingText(language)}
@@ -40,8 +39,7 @@ internal object AiPrompts {
         Never include links, names, phone numbers or addresses.
         Keep the answer under 80 words.
         Reply in ${languageName(language)}.
-        Return ONLY one JSON object, no markdown:
-        {"cardId":"${card.id}","answer":"..."}
+        Return the safety card id and the answer.
 
         SAFETY CARD (${card.id}):
         ${card.groundingText(language)}

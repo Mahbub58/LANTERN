@@ -36,7 +36,7 @@ class FirebaseCloudInference @Inject constructor(
     private val model: GenerativeModel by lazy {
         Firebase.ai(backend = GenerativeBackend.googleAI())
             .generativeModel(
-                modelName = CLOUD_MODEL_NAME,
+                modelName = FirebaseAiConfig.CLOUD_MODEL_NAME,
                 onDeviceConfig = OnDeviceConfig(
                     mode = InferenceMode.ONLY_IN_CLOUD,
                     maxOutputTokens = 320,
@@ -56,24 +56,26 @@ class FirebaseCloudInference @Inject constructor(
 
         repeat(MAX_ATTEMPTS) { attempt ->
             try {
-                val response = model.generateContent(
-                    if (attempt == 0) prompt else "$prompt\nReturn ONLY the JSON object.",
+                val response = model.generateObject(
+                    GeneratedAnswer.firebaseAISchema(),
+                    if (attempt == 0) prompt else "$prompt\nReturn the safety card id and the answer.",
                 )
-                Log.i(TAG, "inferenceSource=${response.inferenceSource} model=$CLOUD_MODEL_NAME")
-                if (response.inferenceSource != InferenceSource.IN_CLOUD) {
-                    Log.w(TAG, "ONLY_IN_CLOUD returned ${response.inferenceSource}")
+                Log.i(TAG, "inferenceSource=${response.response.inferenceSource} model=${FirebaseAiConfig.CLOUD_MODEL_NAME}")
+                if (response.response.inferenceSource != InferenceSource.IN_CLOUD) {
+                    Log.w(TAG, "ONLY_IN_CLOUD returned ${response.response.inferenceSource}")
                     return@repeat
                 }
-                val payload = ModelJson.answer(response.text)
-                if (payload != null && payload.cardId == card.id) {
+                val generated = response.getObject()
+                if (generated != null && generated.cardId == card.id) {
                     val validated = answerValidator.validate(
-                        ModelJson.encodeAnswer(payload.cardId, payload.answer),
+                        ModelJson.encodeAnswer(generated.cardId, generated.answer),
                         card,
                         language,
                     )
                     if (!validated.isNullOrBlank()) return validated
                 }
                 lastError = IllegalStateException("Cloud answer was not grounded in the card")
+                Log.w(TAG, "Cloud answer rejected: ${generated?.cardId ?: "null"} vs ${card.id}")
             } catch (t: Throwable) {
                 lastError = t
                 Log.w(TAG, "Cloud attempt ${attempt + 1} failed", t)
@@ -84,7 +86,6 @@ class FirebaseCloudInference @Inject constructor(
 
     private companion object {
         const val TAG = "LanternCloud"
-        const val CLOUD_MODEL_NAME = "gemini-3.8-flash"
         const val MAX_ATTEMPTS = 2
     }
 }

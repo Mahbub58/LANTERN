@@ -56,7 +56,7 @@ class FirebaseOnDeviceInference @Inject constructor() : OnDeviceInference {
             .generativeModel(
                 // A cloud model name is required by the builder even in
                 // ONLY_ON_DEVICE mode; it is never used by this instance.
-                modelName = CLOUD_MODEL_NAME,
+                modelName = FirebaseAiConfig.CLOUD_MODEL_NAME,
                 onDeviceConfig = OnDeviceConfig(
                     mode = InferenceMode.ONLY_ON_DEVICE,
                     maxOutputTokens = 320,
@@ -73,7 +73,11 @@ class FirebaseOnDeviceInference @Inject constructor() : OnDeviceInference {
         scope.launch { refreshStatus() }
     }
 
-    override suspend fun isAvailable(): Boolean = checkStatus() == NanoStatus.READY
+    override suspend fun isAvailable(): Boolean {
+        val current = checkStatus()
+        Log.i(TAG, "isAvailable=$current extension=${runCatching { model.onDeviceExtension != null }.getOrDefault(false)}")
+        return current == NanoStatus.READY
+    }
 
     override suspend fun answer(
         question: String,
@@ -86,23 +90,26 @@ class FirebaseOnDeviceInference @Inject constructor() : OnDeviceInference {
         val prompt = AiPrompts.onDevice(question, card, language)
         var lastError: Throwable? = null
 
-        // One retry for malformed JSON, then let the router fall back safely.
+        // Structured output keeps the cardId/answer contract reliable. One
+        // retry, then the router falls back to cloud or the vetted card text.
         repeat(MAX_ATTEMPTS) { attempt ->
             try {
-                val response = model.generateContent(
-                    if (attempt == 0) prompt else "$prompt\nReturn ONLY the JSON object.",
+                val response = model.generateObject(
+                    GeneratedAnswer.firebaseAISchema(),
+                    if (attempt == 0) prompt else "$prompt\nReturn the safety card id and the answer.",
                 )
-                val source = response.inferenceSource
-                Log.i(TAG, "inferenceSource=$source model=$CLOUD_MODEL_NAME")
+                val source = response.response.inferenceSource
+                Log.i(TAG, "inferenceSource=$source model=${FirebaseAiConfig.CLOUD_MODEL_NAME}")
                 if (source != InferenceSource.ON_DEVICE) {
                     Log.w(TAG, "ONLY_ON_DEVICE returned $source; rejecting the response")
                     return@repeat
                 }
-                val payload = ModelJson.answer(response.text)
-                if (payload != null && payload.cardId == card.id) {
-                    return ModelJson.encodeAnswer(payload.cardId, payload.answer)
+                val generated = response.getObject()
+                if (generated != null && generated.cardId == card.id) {
+                    return ModelJson.encodeAnswer(generated.cardId, generated.answer)
                 }
-                lastError = IllegalStateException("Unparseable on-device answer")
+                lastError = IllegalStateException("On-device structured answer was empty or used the wrong card")
+                Log.w(TAG, "On-device answer rejected: ${generated?.cardId ?: "null"} vs ${card.id}")
             } catch (t: Throwable) {
                 lastError = t
                 Log.w(TAG, "On-device attempt ${attempt + 1} failed", t)
@@ -117,9 +124,14 @@ class FirebaseOnDeviceInference @Inject constructor() : OnDeviceInference {
 
     private suspend fun checkStatus(): NanoStatus {
         val extension = runCatching { model.onDeviceExtension }.getOrNull()
-            ?: return NanoStatus.UNAVAILABLE
+        if (extension == null) {
+            Log.w(TAG, "onDeviceExtension is null; is firebase-ai-ondevice on the classpath?")
+            return NanoStatus.UNAVAILABLE
+        }
         return try {
-            when (extension.checkStatus()) {
+            val raw = extension.checkStatus()
+            Log.i(TAG, "OnDeviceModelStatus=$raw")
+            when (raw) {
                 OnDeviceModelStatus.AVAILABLE -> {
                     warmUp(extension)
                     NanoStatus.READY
@@ -179,7 +191,6 @@ class FirebaseOnDeviceInference @Inject constructor() : OnDeviceInference {
 
     private companion object {
         const val TAG = "LanternOnDevice"
-        const val CLOUD_MODEL_NAME = "gemini-3.8-flash"
         const val MAX_ATTEMPTS = 2
     }
 }

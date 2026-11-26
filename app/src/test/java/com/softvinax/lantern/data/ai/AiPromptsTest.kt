@@ -28,11 +28,11 @@ class AiPromptsTest {
     )
 
     @Test
-    fun `on-device prompt is short, grounded and forces the json contract`() {
+    fun `on-device prompt is short, grounded and uses the structured contract`() {
         val prompt = AiPrompts.onDevice("pani barh raha hai", card, AppLanguage.ROMAN_UR)
 
-        assertTrue(prompt.contains("ONLY one JSON object"))
-        assertTrue(prompt.contains("\"cardId\":\"${card.id}\""))
+        assertTrue(prompt.contains("Return the safety card id and the answer"))
+        assertTrue(prompt.contains("SAFETY CARD (${card.id})"))
         assertTrue(prompt.contains("Roman Urdu"))
         assertTrue(prompt.contains("Flood ka pani barh raha hai"))
         assertTrue(prompt.contains("Buland jagah par jayen."))
