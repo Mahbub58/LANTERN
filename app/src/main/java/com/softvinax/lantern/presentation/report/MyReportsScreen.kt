@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +41,7 @@ import com.softvinax.lantern.presentation.components.PendingSyncChip
 import com.softvinax.lantern.presentation.components.PrimaryGradientButton
 import com.softvinax.lantern.presentation.components.ReportStatusChip
 import com.softvinax.lantern.presentation.components.SignalChip
+import com.softvinax.lantern.presentation.components.SyncedChip
 import com.softvinax.lantern.presentation.components.relativeTime
 import com.softvinax.lantern.presentation.components.typeLabel
 import com.softvinax.lantern.presentation.theme.LanternTheme
@@ -97,7 +100,9 @@ fun MyReportsScreen(
             )
 
             else -> LazyColumn(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .navigationBarsPadding(),
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
@@ -130,6 +135,10 @@ private fun ReportRow(report: Report) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             ReportStatusChip(status = report.status)
+            if (report.syncState == SyncState.SENT) {
+                Spacer(Modifier.width(8.dp))
+                SyncedChip()
+            }
             Spacer(Modifier.weight(1f))
             if (report.isPendingSync) {
                 PendingSyncChip()

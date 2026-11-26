@@ -147,6 +147,7 @@
     <string name="reports_status_new">New</string>
     <string name="reports_status_assigned">Assigned</string>
     <string name="reports_status_resolved">Resolved</string>
+    <string name="reports_sent">Sent</string>
     <string name="reports_pending">Waiting to send</string>
     <string name="reports_people">%1$d people</string>
     <string name="reports_urgency">Urgency %1$d/5</string>

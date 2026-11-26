@@ -37,6 +37,7 @@ import com.softvinax.lantern.domain.model.InferenceSource
 import com.softvinax.lantern.domain.model.ReportStatus
 import com.softvinax.lantern.presentation.theme.LanternTheme
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Refresh
 
 @Composable
@@ -220,6 +221,39 @@ fun ReportStatusChip(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(text = label, style = MaterialTheme.typography.labelSmall, color = content)
+    }
+}
+
+/**
+ * Shown once a queued report has been handed off. The demo flips from
+ * [PendingSyncChip] to this chip as soon as the debug panel goes online.
+ */
+@Composable
+fun SyncedChip(
+    modifier: Modifier = Modifier,
+) {
+    val colors = LanternTheme.colors
+    val label = stringResource(R.string.reports_sent)
+    Row(
+        modifier = modifier
+            .clip(CircleShape)
+            .background(colors.tealTint)
+            .semantics { contentDescription = label }
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Check,
+            contentDescription = null,
+            tint = colors.teal,
+            modifier = Modifier.size(12.dp),
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = colors.teal,
+        )
     }
 }
 

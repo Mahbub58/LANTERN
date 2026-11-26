@@ -140,6 +140,7 @@
     <string name="reports_status_new">Nayi</string>
     <string name="reports_status_assigned">Tafweez shuda</string>
     <string name="reports_status_resolved">Hal shuda</string>
+    <string name="reports_sent">Bhej diya gaya</string>
     <string name="reports_pending">Bhejne ka intezar</string>
     <string name="reports_people">%1$d afrad</string>
     <string name="reports_urgency">Forgi %1$d/5</string>
