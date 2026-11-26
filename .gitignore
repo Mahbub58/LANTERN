@@ -16,3 +16,15 @@ local.properties
 
 # Android Studio local state
 /.idea/
+
+# Firebase project config (contains the Android API key). Commit the .example only.
+/app/google-services.json
+
+# Firebase tooling local state
+/firebase-debug.log
+/.firebase/
+/rules-tests/node_modules/
+/rules-tests/package-lock.json
+/firestore-debug.log
+/ui-debug.log
+/database-debug.log
