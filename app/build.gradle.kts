@@ -8,7 +8,7 @@ plugins {
 }
 
 android {
-    namespace = "com.softvinax.lantern"
+    namespace = "com.mahbub.lantern"
     compileSdk {
         version = release(37)
     }

@@ -98,9 +98,9 @@ domain.
 
 **AI Logic is called here at runtime:**
 
-- [On-device: `FirebaseOnDeviceInference.kt`](app/src/main/java/com/softvinax/lantern/data/ai/FirebaseOnDeviceInference.kt)
-- [Cloud: `FirebaseCloudInference.kt`](app/src/main/java/com/softvinax/lantern/data/ai/FirebaseCloudInference.kt)
-- [Cloud-only desk tasks: `CloudTriageService.kt`](app/src/main/java/com/softvinax/lantern/data/ai/CloudTriageService.kt)
+- [On-device: `FirebaseOnDeviceInference.kt`](app/src/main/java/com/mahbub/lantern/data/ai/FirebaseOnDeviceInference.kt)
+- [Cloud: `FirebaseCloudInference.kt`](app/src/main/java/com/mahbub/lantern/data/ai/FirebaseCloudInference.kt)
+- [Cloud-only desk tasks: `CloudTriageService.kt`](app/src/main/java/com/mahbub/lantern/data/ai/CloudTriageService.kt)
 
 ### On-device: Gemini Nano 4, explicitly
 
@@ -186,7 +186,7 @@ The hybrid API is experimental, so the AI files opt in with
 ## Project layout
 
 ```
-app/src/main/java/com/softvinax/lantern/
+app/src/main/java/com/mahbub/lantern/
 ├── domain/            pure Kotlin: models, AI, repositories, use cases
 ├── data/ai/           Firebase AI Logic adapters, prompts, defensive JSON, desk tasks
 ├── data/remote/       Firebase Auth, Firestore repos, Remote Config, cards, connectivity
@@ -229,9 +229,8 @@ is **`com.mahbub.lantern`** and place it at `app/google-services.json`.
 It is git-ignored. Commit only the placeholder
 [`app/google-services.json.example`](app/google-services.json.example).
 
-> The code package is `com.softvinax.lantern` (namespace); the Firebase-registered
-> application id is `com.mahbub.lantern`. This is intentional: the Firebase app in the
-> console was registered with that id, and `google-services.json` must match `applicationId`.
+> The code package (`namespace`) and the Firebase-registered `applicationId` are both
+> `com.mahbub.lantern`, so `google-services.json` must use the same package name.
 
 ### 2. App Check
 
@@ -276,7 +275,7 @@ npm test
 ### 5. Remote Config keys
 
 Create these parameters in **Remote Config** with the same values as
-[`RemoteConfigDefaults.kt`](app/src/main/java/com/softvinax/lantern/data/remote/RemoteConfigDefaults.kt):
+[`RemoteConfigDefaults.kt`](app/src/main/java/com/mahbub/lantern/data/remote/RemoteConfigDefaults.kt):
 
 | Key | Type | Default |
 | --- | --- | --- |
@@ -328,10 +327,10 @@ API 26+.
 ```
 
 The installed application id is `com.mahbub.lantern`; the activity is
-`com.softvinax.lantern.MainActivity`:
+`com.mahbub.lantern.MainActivity`:
 
 ```bash
-adb shell am start -n com.mahbub.lantern/com.softvinax.lantern.MainActivity
+adb shell am start -n com.mahbub.lantern/com.mahbub.lantern.MainActivity
 ```
 
 ---
