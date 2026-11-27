@@ -535,10 +535,10 @@ adb logcat -s LanternOnDevice LanternCloud LanternReports LanternAuth LanternApp
 1. Register the App Check debug token printed by `adb logcat -s DebugAppCheckProvider`
    (or run `./scripts/firebase_setup.sh` after `firebase login`).
 2. Enable **Anonymous** sign-in:
-   <https://console.firebase.google.com/project/hackathon-258dd/authentication/providers>
+   <https://console.firebase.google.com/project/brief-11186/authentication/providers>
 3. Enable **AI Logic** with the Gemini Developer API provider.
 4. Enforce App Check on **AI Logic** and **Cloud Firestore**:
-   <https://console.firebase.google.com/project/hackathon-258dd/appcheck/apis>
+   <https://console.firebase.google.com/project/brief-11186/appcheck/apis>
 5. Deploy `firestore.rules` (`./scripts/firebase_setup.sh` does this).
 6. Create the five Remote Config keys (optional for the demo, required for live control).
 7. Enroll the test device in the **AICore Developer Preview** for Gemini Nano 4:

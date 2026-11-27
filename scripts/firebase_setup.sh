@@ -12,8 +12,8 @@
 # the Firebase console (links are printed at the end).
 set -euo pipefail
 
-PROJECT="${FIREBASE_PROJECT:-hackathon-258dd}"
-APP_ID="${FIREBASE_APP_ID:-1:161376977622:android:82ff473c4508af44b6ff77}"
+PROJECT="${FIREBASE_PROJECT:-brief-11186}"
+APP_ID="${FIREBASE_APP_ID:-1:780322729351:android:cf86bad376836edccc7722}"
 FIREBASE=(npx --yes firebase-tools@15.37.0)
 
 if ! "${FIREBASE[@]}" login:list 2>/dev/null | grep -qi "logged in"; then
