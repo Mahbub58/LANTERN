@@ -1,6 +1,7 @@
 package com.mahbub.lantern.data.fake
 
 import com.mahbub.lantern.domain.model.Alert
+import com.mahbub.lantern.domain.model.AlertKind
 import com.mahbub.lantern.domain.model.AlertLevel
 import com.mahbub.lantern.domain.model.LocalizedText
 import com.mahbub.lantern.domain.repository.AlertRepository
@@ -55,6 +56,7 @@ class FakeAlertRepository @Inject constructor() : AlertRepository {
             ),
             region = "Karachi • Malir",
             issuedAt = now - 45 * 60 * 1000L,
+            kind = AlertKind.WARNING,
         ),
         Alert(
             id = "alert-relief-1",

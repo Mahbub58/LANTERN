@@ -6,6 +6,12 @@ enum class AlertLevel {
     URGENT,
 }
 
+/** Which Firestore feed an alert came from. */
+enum class AlertKind {
+    ALERT,
+    WARNING,
+}
+
 data class Alert(
     val id: String,
     val level: AlertLevel,
@@ -14,4 +20,6 @@ data class Alert(
     val region: String,
     /** Epoch millis when the responder published the alert. */
     val issuedAt: Long,
+    /** [AlertKind.ALERT] for `alerts`, [AlertKind.WARNING] for `warnings`. */
+    val kind: AlertKind = AlertKind.ALERT,
 )

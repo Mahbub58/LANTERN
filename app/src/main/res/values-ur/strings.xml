@@ -281,12 +281,15 @@
     <string name="alerts_local_title">مقامی الرٹس</string>
     <string name="alerts_subtitle">لینٹرن ڈیسک سے براہِ راست اپ ڈیٹس</string>
     <string name="alerts_refresh">تازہ کریں</string>
-    <string name="alerts_filter_all">تمام الرٹس</string>
-    <string name="alerts_filter_warnings">صرف انتباہ</string>
+    <string name="alerts_filter_all">سب</string>
+    <string name="alerts_filter_alerts">الرٹس</string>
+    <string name="alerts_filter_warnings">انتباہ</string>
     <string name="alerts_severity_warning">انتباہ</string>
     <string name="alerts_severity_watch">خبردار</string>
     <string name="alerts_severity_clear">سب محفوظ</string>
+    <string name="alerts_no_alerts_title">اس وقت کوئی الرٹ نہیں</string>
+    <string name="alerts_no_alerts_body">انتباہ اور سب محفوظ اپ ڈیٹس دیکھنے کے لیے سب منتخب کریں۔</string>
     <string name="alerts_no_warnings_title">اس وقت کوئی انتباہ نہیں</string>
-    <string name="alerts_no_warnings_body">معلومات اور سب محفوظ اپ ڈیٹس کے لیے تمام الرٹس منتخب کریں۔</string>
+    <string name="alerts_no_warnings_body">الرٹس اور سب محفوظ اپ ڈیٹس دیکھنے کے لیے سب منتخب کریں۔</string>
     <string name="alerts_close">بند کریں</string>
 </resources>

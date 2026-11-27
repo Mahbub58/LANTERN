@@ -6,6 +6,8 @@ rules_version = '2';
 //             their own reports. No client updates or deletes.
 // alerts:     readable by any signed-in citizen, written only by the console
 //             or the Admin SDK (responder desk).
+// warnings:   same access as alerts; a separate feed for active hazard
+//             warnings.
 // responders: never readable by the citizen client.
 // config:     the versioned safety-card pack is readable by signed-in citizens
 //             and writable only by the Admin SDK.
@@ -61,6 +63,11 @@ service cloud.firestore {
     }
 
     match /alerts/{alertId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    match /warnings/{warningId} {
       allow read: if signedIn();
       allow write: if false;
     }

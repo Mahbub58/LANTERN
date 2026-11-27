@@ -37,7 +37,7 @@ on the phone or Gemini in the cloud, and damage reports queue locally and sync t
   are kept in a local queue until anonymous sign-in is possible, then written to Firestore.
 - **Privacy.** `PiiScrubber` runs before every cloud prompt. Coordinates never go to a
   model. Drafts never leave the phone; a report leaves only when the person presses Send.
-- **Tests.** 129 unit tests, 19 emulator-based Firestore rules tests, an always-on Firebase
+- **Tests.** 129 unit tests, 22 emulator-based Firestore rules tests, an always-on Firebase
   wiring test, and an opt-in airplane-mode offline flow test.
 - **Real accuracy numbers.** 40 questions (20 Roman Urdu, 10 Urdu, 10 English) and 20
   reports are measured by `AccuracyReportTest`; the numbers are published below.
@@ -177,7 +177,7 @@ The hybrid API is experimental, so the AI files opt in with
 | --- | --- |
 | **AI Logic** | On-device Gemini Nano 4 (`ONLY_ON_DEVICE`) and cloud Gemini (`ONLY_IN_CLOUD`); `inferenceSource` is logged |
 | **Authentication** | Anonymous sign-in; `uid` scopes every report |
-| **Firestore** | `reports`, `alerts`, `config/safety_cards`; unlimited offline cache; `hasPendingWrites` drives the sync badge |
+| **Firestore** | `reports`, realtime `alerts` + `warnings` feeds, `config/safety_cards`; unlimited offline cache; `hasPendingWrites` drives the sync badge |
 | **Remote Config** | Live threshold, cloud fallback, alert level, emergency numbers and card version |
 | **App Check** | Debug provider in debug, Play Integrity in release; installed before AI/Firestore |
 
@@ -203,7 +203,7 @@ app/src/androidTest/                      Firebase wiring + opt-in offline flow
 firestore.rules                           security rules
 firestore.indexes.json                    no composite indexes required
 firebase.json / .firebaserc               emulator + deploy config
-rules-tests/                              Node emulator rules tests (19)
+rules-tests/                              Node emulator rules tests (22)
 ```
 
 ---
@@ -370,11 +370,13 @@ reports/{reportId}
   status: NEW | ASSIGNED | RESOLVED
   createdAt / updatedAt / sentAt: epoch millis
 
-alerts/{alertId}
+alerts/{alertId}                 // general information and all-clear updates
+warnings/{warningId}             // active hazard warnings
   level: INFO | WARNING | URGENT
-  title / message: { en, ur, roman }
+  title: string                  // { en, ur, roman } maps are also accepted
+  message: string                // { en, ur, roman } maps are also accepted
   region: string
-  issuedAt: epoch millis
+  createdAt: timestamp           // Firestore Timestamp; epoch millis/seconds accepted
 
 responders/{responderId}      // not readable by the citizen client
 config/safety_cards           // read-only to signed-in citizens
@@ -384,6 +386,33 @@ config/safety_cards           // read-only to signed-in citizens
 
 `syncState` is not stored. It is derived from Firestore snapshot metadata, so a report can
 never claim to be Sent before the server acknowledged it.
+
+### Alert and warning feeds
+
+Both feeds are read in realtime and merged newest first. The Alerts tab has
+**All / Alerts / Warnings** filters, so each collection can also be viewed on its own.
+
+Create documents from the Firebase console (**Firestore → Start collection**) or with the
+Admin SDK. The console example below uses the date type for `createdAt`:
+
+```
+alerts/flood-update-1
+  level:     "WARNING"
+  title:     "Water rising near Malir River"
+  message:   "Move to higher ground. Do not drive through water."
+  region:    "Karachi • Malir"
+  createdAt: 2026-11-27T10:30:00Z      // Timestamp
+
+warnings/flood-warning-1
+  level:     "URGENT"
+  title:     "Flash flood warning"
+  message:   "Leave low-lying streets now and go to the nearest shelter."
+  region:    "Karachi • Malir"
+  createdAt: 2026-11-27T10:35:00Z      // Timestamp
+```
+
+A document appears at the top of the feed as soon as it is added or edited. Writes are
+denied to the app; only the console/Admin SDK can publish.
 
 ---
 
@@ -406,7 +435,7 @@ never claim to be Sent before the server acknowledged it.
 # 124 JVM tests: routing, safety, PII, use cases, ViewModels, new data helpers
 ./gradlew :app:testDebugUnitTest
 
-# 19 Firestore emulator rules tests (Node)
+# 22 Firestore emulator rules tests (Node)
 cd rules-tests && npm install && npm test
 
 # Always-on Firebase wiring test + opt-in airplane-mode offline flow
@@ -493,7 +522,7 @@ adb logcat -s LanternOnDevice LanternCloud LanternReports LanternAuth LanternApp
   with each report.
 - [x] **Offline persistence.** Firestore unlimited cache; `hasPendingWrites` drives
   QUEUED → SENT; drafts are local.
-- [x] **Rules.** `firestore.rules` plus 19 emulator tests covering every table row.
+- [x] **Rules.** `firestore.rules` plus 22 emulator tests covering every table row.
 - [x] **Remote Config.** Five keys, safe defaults, real-time updates.
 - [x] **Privacy.** PII scrubbed before every cloud prompt; no coordinates to models.
 - [x] **License visible.** [LICENSE](LICENSE), Apache 2.0.
@@ -532,11 +561,11 @@ device.
 
 - Firebase AI Logic on-device + cloud adapters with `@Generable` structured output,
   prompts, defensive JSON and one retry.
-- Anonymous Auth, Firestore reports/alerts, always-local-first queue with 30s retry,
+- Anonymous Auth, Firestore reports and realtime alerts/warnings, always-local-first queue with 30s retry,
   local draft/queue stores.
 - Remote Config with real-time updates, versioned card pack loader, real connectivity.
 - App Check installers for debug/release, Firestore persistence, network permission.
-- Firestore rules + 19 emulator tests, 29 new JVM tests, instrumented wiring/offline tests.
+- Firestore rules + 22 emulator tests, 29 new JVM tests, instrumented wiring/offline tests.
 - Real accuracy report.
 
 ### Still manual

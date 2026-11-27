@@ -49,6 +49,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mahbub.lantern.R
 import com.mahbub.lantern.domain.model.Alert
+import com.mahbub.lantern.domain.model.AlertKind
 import com.mahbub.lantern.domain.model.AlertLevel
 import com.mahbub.lantern.domain.model.AppLanguage
 import com.mahbub.lantern.domain.model.LocalizedText
@@ -87,13 +88,13 @@ fun AlertsScreen(
     onTabSelected: (LanternTab) -> Unit,
 ) {
     val colors = LanternTheme.colors
-    var warningsOnly by rememberSaveable { mutableStateOf(false) }
+    var feed by rememberSaveable { mutableStateOf(AlertFeed.ALL) }
     var selectedAlert by remember { mutableStateOf<Alert?>(null) }
 
-    val visibleAlerts = if (warningsOnly) {
-        state.alerts.filter { it.level != AlertLevel.INFO }
-    } else {
-        state.alerts
+    val visibleAlerts = when (feed) {
+        AlertFeed.ALL -> state.alerts
+        AlertFeed.ALERTS -> state.alerts.filter { it.kind == AlertKind.ALERT }
+        AlertFeed.WARNINGS -> state.alerts.filter { it.kind == AlertKind.WARNING }
     }
 
     Scaffold(
@@ -116,8 +117,8 @@ fun AlertsScreen(
         ) {
             AlertsHeader(onRefresh = onRefresh)
             AlertFilter(
-                warningsOnly = warningsOnly,
-                onWarningsOnlyChange = { warningsOnly = it },
+                feed = feed,
+                onFeedSelected = { feed = it },
             )
 
             when {
@@ -134,17 +135,17 @@ fun AlertsScreen(
 
                 visibleAlerts.isEmpty() -> EmptyState(
                     title = stringResource(
-                        if (warningsOnly) {
-                            R.string.alerts_no_warnings_title
-                        } else {
-                            R.string.alerts_empty_title
+                        when (feed) {
+                            AlertFeed.ALL -> R.string.alerts_empty_title
+                            AlertFeed.ALERTS -> R.string.alerts_no_alerts_title
+                            AlertFeed.WARNINGS -> R.string.alerts_no_warnings_title
                         },
                     ),
                     body = stringResource(
-                        if (warningsOnly) {
-                            R.string.alerts_no_warnings_body
-                        } else {
-                            R.string.alerts_empty_body
+                        when (feed) {
+                            AlertFeed.ALL -> R.string.alerts_empty_body
+                            AlertFeed.ALERTS -> R.string.alerts_no_alerts_body
+                            AlertFeed.WARNINGS -> R.string.alerts_no_warnings_body
                         },
                     ),
                 )
@@ -232,8 +233,8 @@ private fun RefreshPill(onClick: () -> Unit) {
 
 @Composable
 private fun AlertFilter(
-    warningsOnly: Boolean,
-    onWarningsOnlyChange: (Boolean) -> Unit,
+    feed: AlertFeed,
+    onFeedSelected: (AlertFeed) -> Unit,
 ) {
     val colors = LanternTheme.colors
     Row(
@@ -245,17 +246,20 @@ private fun AlertFilter(
             .padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        FilterOption(
-            text = stringResource(R.string.alerts_filter_all),
-            selected = !warningsOnly,
-            onClick = { onWarningsOnlyChange(false) },
-        )
-        FilterOption(
-            text = stringResource(R.string.alerts_filter_warnings),
-            selected = warningsOnly,
-            onClick = { onWarningsOnlyChange(true) },
-        )
+        AlertFeed.entries.forEach { option ->
+            FilterOption(
+                text = stringResource(option.label),
+                selected = feed == option,
+                onClick = { onFeedSelected(option) },
+            )
+        }
     }
+}
+
+private enum class AlertFeed(val label: Int) {
+    ALL(R.string.alerts_filter_all),
+    ALERTS(R.string.alerts_filter_alerts),
+    WARNINGS(R.string.alerts_filter_warnings),
 }
 
 @Composable
@@ -465,6 +469,7 @@ private fun AlertsPreview() {
                         title = "Aftershock watch — stay clear of cracked walls",
                         message = "Smaller tremors may follow today's quake. Keep exits clear and shoes by your bed.",
                         minutesAgo = 38,
+                        kind = AlertKind.WARNING,
                     ),
                     previewAlert(
                         id = "a3",
@@ -516,6 +521,7 @@ private fun previewAlert(
     title: String,
     message: String,
     minutesAgo: Long,
+    kind: AlertKind = AlertKind.ALERT,
 ) = Alert(
     id = id,
     level = level,
@@ -523,4 +529,5 @@ private fun previewAlert(
     message = LocalizedText(en = message),
     region = region,
     issuedAt = System.currentTimeMillis() - minutesAgo * 60_000L,
+    kind = kind,
 )

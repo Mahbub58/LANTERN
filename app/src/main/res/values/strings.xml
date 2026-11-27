@@ -293,12 +293,15 @@
     <string name="alerts_local_title">Local alerts</string>
     <string name="alerts_subtitle">Live updates from Lantern Desk</string>
     <string name="alerts_refresh">Refresh</string>
-    <string name="alerts_filter_all">All alerts</string>
-    <string name="alerts_filter_warnings">Warnings only</string>
+    <string name="alerts_filter_all">All</string>
+    <string name="alerts_filter_alerts">Alerts</string>
+    <string name="alerts_filter_warnings">Warnings</string>
     <string name="alerts_severity_warning">Warning</string>
     <string name="alerts_severity_watch">Watch</string>
     <string name="alerts_severity_clear">All clear</string>
+    <string name="alerts_no_alerts_title">No alerts right now</string>
+    <string name="alerts_no_alerts_body">Switch to All to see warnings and all-clear updates.</string>
     <string name="alerts_no_warnings_title">No warnings right now</string>
-    <string name="alerts_no_warnings_body">Switch to All alerts to see information and all-clear updates.</string>
+    <string name="alerts_no_warnings_body">Switch to All to see alerts and all-clear updates.</string>
     <string name="alerts_close">Close</string>
 </resources>

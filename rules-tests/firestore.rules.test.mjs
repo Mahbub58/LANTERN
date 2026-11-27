@@ -163,6 +163,24 @@ describe("alerts", () => {
   });
 });
 
+describe("warnings", () => {
+  it("allows a signed-in citizen to read warnings", async () => {
+    const db = testEnv.authenticatedContext(CITIZEN).firestore();
+    await assertSucceeds(getDoc(doc(db, "warnings/w1")));
+    await assertSucceeds(getDocs(collection(db, "warnings")));
+  });
+
+  it("denies signed-out warning reads", async () => {
+    const db = testEnv.unauthenticatedContext().firestore();
+    await assertFails(getDoc(doc(db, "warnings/w1")));
+  });
+
+  it("denies citizen warning writes", async () => {
+    const db = testEnv.authenticatedContext(CITIZEN).firestore();
+    await assertFails(setDoc(doc(db, "warnings/forged"), { level: "WARNING" }));
+  });
+});
+
 describe("responders", () => {
   it("denies responder reads to signed-in citizens", async () => {
     const db = testEnv.authenticatedContext(CITIZEN).firestore();

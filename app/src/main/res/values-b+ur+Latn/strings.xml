@@ -281,12 +281,15 @@
     <string name="alerts_local_title">Local alerts</string>
     <string name="alerts_subtitle">Lantern Desk se live updates</string>
     <string name="alerts_refresh">Refresh</string>
-    <string name="alerts_filter_all">All alerts</string>
-    <string name="alerts_filter_warnings">Sirf warnings</string>
+    <string name="alerts_filter_all">All</string>
+    <string name="alerts_filter_alerts">Alerts</string>
+    <string name="alerts_filter_warnings">Warnings</string>
     <string name="alerts_severity_warning">Warning</string>
     <string name="alerts_severity_watch">Watch</string>
     <string name="alerts_severity_clear">All clear</string>
+    <string name="alerts_no_alerts_title">Is waqt koi alert nahi</string>
+    <string name="alerts_no_alerts_body">Warnings aur all-clear updates ke liye All select karein.</string>
     <string name="alerts_no_warnings_title">Is waqt koi warning nahi</string>
-    <string name="alerts_no_warnings_body">Information aur all-clear updates ke liye All alerts select karein.</string>
+    <string name="alerts_no_warnings_body">Alerts aur all-clear updates ke liye All select karein.</string>
     <string name="alerts_close">Band karein</string>
 </resources>
