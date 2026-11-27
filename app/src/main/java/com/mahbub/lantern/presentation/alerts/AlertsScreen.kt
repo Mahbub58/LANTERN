@@ -155,7 +155,7 @@ fun AlertsScreen(
                     contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    items(visibleAlerts, key = { it.id }) { alert ->
+                    items(visibleAlerts, key = { "${it.kind.name}:${it.id}" }) { alert ->
                         AlertListCard(
                             alert = alert,
                             language = state.language,

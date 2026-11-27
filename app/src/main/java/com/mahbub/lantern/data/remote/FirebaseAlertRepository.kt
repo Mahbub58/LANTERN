@@ -92,7 +92,9 @@ class FirebaseAlertRepository @Inject constructor(
                 Log.w(TAG, "Listener failed for $collection", error)
                 return@addSnapshotListener
             }
-            target.value = snapshot?.documents.orEmpty().mapNotNull { document ->
+            val documents = snapshot?.documents.orEmpty()
+            Log.d(TAG, "Loaded ${documents.size} document(s) from $collection")
+            target.value = documents.mapNotNull { document ->
                 val data = document.data ?: return@mapNotNull null
                 Alert(
                     id = document.id,
