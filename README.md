@@ -291,8 +291,11 @@ The app calls `setDefaultsAsync` first, fetches and activates, then listens with
 restart. It also re-fetches when connectivity returns.
 
 Set `safety_cards` to the **full JSON bundle** (the same shape as
-`app/src/main/assets/safety_cards.json`). Use the **String** parameter type and paste the
-entire JSON. If the key is empty, missing or invalid, the bundled asset is used.
+`app/src/main/assets/safety_cards.json`). The **JSON** parameter type (or **String**) both
+work: Remote Config data types do not change what the client SDK returns, so the app
+receives the JSON text either way and unwraps a quoted value if the console stored one.
+If the key is empty, missing or `null`, the bundled asset is activated and any cached
+remote pack is cleared. An invalid pack never replaces the active one.
 
 ### 6. AI Logic and Gemini Nano 4
 
@@ -316,8 +319,10 @@ In **Remote Config**, edit the `safety_cards` parameter and paste the full bundl
 ```
 
 Publish the change. The running app applies the pack immediately, validates every card,
-and caches it for offline use. A missing or malformed value never replaces the last good
-pack; the bundled `1.0.0-demo` asset remains the final fallback.
+and caches it for offline use. On a fresh install the pack is fetched at launch
+(`minimumFetchInterval` is 0 in debug, 15 minutes in release). A missing or malformed
+value never replaces the last good pack; the bundled `1.0.0-demo` asset remains the
+final fallback.
 
 ---
 

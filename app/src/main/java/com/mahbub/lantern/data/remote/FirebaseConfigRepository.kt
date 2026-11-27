@@ -7,6 +7,8 @@ import com.google.firebase.remoteconfig.ConfigUpdate
 import com.google.firebase.remoteconfig.ConfigUpdateListener
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigException
+import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
+import com.mahbub.lantern.BuildConfig
 import com.mahbub.lantern.domain.model.AlertLevel
 import com.mahbub.lantern.domain.model.AppLanguage
 import com.mahbub.lantern.domain.model.EmergencyNumber
@@ -72,8 +74,21 @@ class FirebaseConfigRepository @Inject constructor(
     init {
         scope.launch {
             runCatching {
+                val settings = FirebaseRemoteConfigSettings.Builder()
+                    // Always fetch in debug so a newly published pack is picked up
+                    // on the next launch; 15 minutes in release to stay well inside
+                    // the Remote Config fetch quota.
+                    .setMinimumFetchIntervalInSeconds(if (BuildConfig.DEBUG) 0L else 900L)
+                    .build()
+                Tasks.await(remoteConfig.setConfigSettingsAsync(settings))
                 Tasks.await(remoteConfig.setDefaultsAsync(RemoteConfigDefaults.values))
-                Tasks.await(remoteConfig.fetchAndActivate())
+                val updated = Tasks.await(remoteConfig.fetchAndActivate())
+                val info = remoteConfig.info
+                Log.i(
+                    TAG,
+                    "Remote Config fetch: updated=$updated status=${info.lastFetchStatus} " +
+                        "keys=${remoteConfig.all.keys}",
+                )
             }.onFailure { Log.w(TAG, "Remote Config initial fetch failed", it) }
             readRemote()
             remoteConfig.addOnConfigUpdateListener(object : ConfigUpdateListener {
@@ -95,7 +110,10 @@ class FirebaseConfigRepository @Inject constructor(
         scope.launch {
             connectivityRepository.isOnline.distinctUntilChanged().collect { online ->
                 if (!online) return@collect
-                runCatching { Tasks.await(remoteConfig.fetchAndActivate()) }
+                runCatching {
+                    val updated = Tasks.await(remoteConfig.fetchAndActivate())
+                    Log.i(TAG, "Remote Config refetch on reconnect: updated=$updated")
+                }.onFailure { Log.w(TAG, "Remote Config refetch failed", it) }
                 readRemote()
             }
         }

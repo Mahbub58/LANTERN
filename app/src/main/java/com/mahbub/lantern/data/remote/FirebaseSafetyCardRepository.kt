@@ -30,8 +30,9 @@ import kotlinx.serialization.json.Json
  *  - Remote Config itself persists the last fetched value on disk.
  *  - The validated pack is also cached in SharedPreferences, so the last good
  *    pack is active immediately on the next launch, even with no signal.
- *  - If `safety_cards` is missing/blank/invalid, the bundled
- *    `assets/safety_cards.json` pack is used.
+ *  - If `safety_cards` is missing/blank/null, the bundled
+ *    `assets/safety_cards.json` pack is activated and any cached remote pack
+ *    is cleared. An invalid remote pack never replaces the active pack.
  *
  * A bad remote pack never replaces the last good cached or bundled pack.
  */
@@ -56,16 +57,13 @@ class FirebaseSafetyCardRepository @Inject constructor(
 
     init {
         scope.launch {
-            val result = runCatching { mutex.withLock { ensureLoadedLocked() } }
-            result.onFailure { Log.e(TAG, "Bundled safety cards failed to load", it) }
-            if (result.isSuccess) {
-                loaded.complete(Unit)
-                refresh()
-            } else {
-                loaded.completeExceptionally(
-                    result.exceptionOrNull() ?: IllegalStateException("Card load failed"),
-                )
-            }
+            runCatching { mutex.withLock { ensureLoadedLocked() } }
+                .onFailure { Log.e(TAG, "Bundled safety cards failed to load", it) }
+            // Even when the bundled asset is unreadable, keep going: the Remote
+            // Config pack can still supply cards. getAll() returns an empty list
+            // until one of them loads.
+            loaded.complete(Unit)
+            refresh()
         }
     }
 
@@ -82,24 +80,33 @@ class FirebaseSafetyCardRepository @Inject constructor(
     override suspend fun refresh() {
         loaded.await()
 
-        val raw = runCatching {
-            remoteConfig.getString(RemoteConfigDefaults.SAFETY_CARDS_JSON).trim()
+        val value = runCatching {
+            remoteConfig.getValue(RemoteConfigDefaults.SAFETY_CARDS_JSON)
         }.onFailure {
             Log.w(TAG, "Remote Config safety_cards unavailable", it)
-        }.getOrDefault("")
+        }.getOrNull()
 
-        if (raw.isBlank() || raw == "null") {
-            Log.i(TAG, "No Remote Config safety_cards; using ${activeLabel()}")
+        val source = sourceLabel(value?.source)
+        val raw = RemoteCardJson.normalize(runCatching { value?.asString() }.getOrNull())
+
+        if (raw.isBlank()) {
+            useBundled("safety_cards ($source): ${RemoteCardJson.describe(raw)}")
             return
         }
-        if (raw == activeRaw) return
+        if (raw == activeRaw) {
+            Log.i(TAG, "safety_cards ($source): ${raw.length} chars, matches active pack -> ${activeLabel()}")
+            return
+        }
 
+        Log.i(TAG, "safety_cards ($source): ${RemoteCardJson.describe(raw)} -> validating")
         applyRemote(raw)
     }
 
     private suspend fun applyRemote(raw: String) {
         val bundle = runCatching { json.decodeFromString<SafetyCardBundleDto>(raw) }
-            .onFailure { Log.w(TAG, "Remote Config safety_cards is not valid JSON", it) }
+            .onFailure {
+                Log.w(TAG, "Remote Config safety_cards is not valid JSON (${raw.length} chars)", it)
+            }
             .getOrNull() ?: return
 
         val cards = runCatching { bundle.cards.toDomainValidated() }
@@ -122,24 +129,63 @@ class FirebaseSafetyCardRepository @Inject constructor(
 
     private fun ensureLoadedLocked() {
         if (bundled != null) return
-        val raw = context.assets.open(ASSET_NAME).bufferedReader().use { it.readText() }
-        val bundle = json.decodeFromString<SafetyCardBundleDto>(raw)
-        val cards = bundle.cards.toDomainValidated()
-        val bundledPack = CardPack(bundle.version, cards)
+
+        val bundledPack = runCatching { readBundled() }
+            .onFailure { Log.e(TAG, "Bundled asset $ASSET_NAME is unusable", it) }
+            .getOrNull()
         bundled = bundledPack
 
         val cached = readCached()
-        if (cached != null) {
-            active = cached
-            activeRaw = prefs.getString(KEY_JSON, null)
-            versionFlow.value = "${cached.version} (cached)"
-            Log.i(TAG, "Using cached card pack ${cached.version} (${cached.cards.size} cards)")
-        } else {
-            active = bundledPack
-            activeRaw = null
-            versionFlow.value = "${bundledPack.version} (bundled)"
-            Log.i(TAG, "Using bundled card pack ${bundledPack.version} (${bundledPack.cards.size} cards)")
+        when {
+            cached != null -> {
+                active = cached
+                activeRaw = prefs.getString(KEY_JSON, null)
+                versionFlow.value = "${cached.version} (cached remote config)"
+                Log.i(TAG, "Using cached Remote Config pack ${cached.version} (${cached.cards.size} cards)")
+            }
+
+            bundledPack != null -> {
+                active = bundledPack
+                activeRaw = null
+                versionFlow.value = "${bundledPack.version} (bundled)"
+                Log.i(TAG, "Using bundled card pack ${bundledPack.version} (${bundledPack.cards.size} cards)")
+            }
+
+            else -> {
+                active = null
+                activeRaw = null
+                versionFlow.value = "unavailable"
+                Log.w(TAG, "No bundled or cached card pack; waiting for Remote Config")
+            }
         }
+    }
+
+    /**
+     * `safety_cards` is missing or null: the bundled asset is the source of
+     * truth again. The cached remote pack is cleared so a removed parameter
+     * does not keep serving stale content.
+     */
+    private suspend fun useBundled(reason: String) {
+        val pack = bundled
+        if (pack == null) {
+            Log.w(TAG, "$reason; bundled asset unavailable, keeping ${activeLabel()}")
+            return
+        }
+        mutex.withLock {
+            active = pack
+            activeRaw = null
+            prefs.edit().remove(KEY_JSON).remove(KEY_VERSION).apply()
+            versionFlow.value = "${pack.version} (bundled)"
+        }
+        Log.i(TAG, "$reason -> using bundled pack ${pack.version} (${pack.cards.size} cards)")
+    }
+
+    private fun readBundled(): CardPack {
+        val bytes = context.assets.open(ASSET_NAME).use { it.readBytes() }
+        Log.i(TAG, "Bundled asset $ASSET_NAME: ${bytes.size} bytes")
+        val bundle = json.decodeFromString<SafetyCardBundleDto>(bytes.toString(Charsets.UTF_8))
+        val cards = bundle.cards.toDomainValidated()
+        return CardPack(bundle.version, cards)
     }
 
     private fun readCached(): CardPack? {
@@ -158,8 +204,16 @@ class FirebaseSafetyCardRepository @Inject constructor(
             .apply()
     }
 
+    private fun sourceLabel(source: Int?): String = when (source) {
+        FirebaseRemoteConfig.VALUE_SOURCE_REMOTE -> "remote"
+        FirebaseRemoteConfig.VALUE_SOURCE_DEFAULT -> "in-app default"
+        FirebaseRemoteConfig.VALUE_SOURCE_STATIC -> "static"
+        null -> "unavailable"
+        else -> "source $source"
+    }
+
     private fun activeLabel(): String = if (activeRaw != null) {
-        "cached pack ${active?.version}"
+        "cached Remote Config pack ${active?.version}"
     } else {
         "bundled pack ${active?.version}"
     }
