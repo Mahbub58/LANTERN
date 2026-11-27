@@ -1,5 +1,8 @@
 package com.mahbub.lantern.presentation.navigation
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,15 +47,34 @@ fun LanternRoot(
     val context = LocalContext.current
 
     LaunchedEffect(appCheckFailure) {
-        if (appCheckFailure == null) return@LaunchedEffect
+        val failure = appCheckFailure ?: return@LaunchedEffect
+        val token = failure.debugToken
         val result = snackbarHostState.showSnackbar(
-            message = context.getString(R.string.app_check_failed),
-            actionLabel = context.getString(R.string.app_check_retry),
+            message = if (token != null) {
+                context.getString(R.string.app_check_failed_token, token)
+            } else {
+                context.getString(R.string.app_check_failed)
+            },
+            actionLabel = context.getString(
+                if (token != null) R.string.app_check_copy_token else R.string.app_check_retry,
+            ),
             withDismissAction = true,
             duration = SnackbarDuration.Long,
         )
         when (result) {
-            SnackbarResult.ActionPerformed -> viewModel.retryAppCheck()
+            SnackbarResult.ActionPerformed -> {
+                if (token != null) {
+                    copyToClipboard(context, token)
+                    snackbarHostState.showSnackbar(
+                        message = context.getString(R.string.app_check_token_copied),
+                        duration = SnackbarDuration.Short,
+                    )
+                    viewModel.dismissAppCheckFailure()
+                } else {
+                    viewModel.retryAppCheck()
+                }
+            }
+
             SnackbarResult.Dismissed -> viewModel.dismissAppCheckFailure()
         }
     }
@@ -74,6 +96,11 @@ fun LanternRoot(
                 .padding(bottom = 88.dp),
         )
     }
+}
+
+private fun copyToClipboard(context: Context, token: String) {
+    val clipboard = context.getSystemService(ClipboardManager::class.java) ?: return
+    clipboard.setPrimaryClip(ClipData.newPlainText("App Check debug token", token))
 }
 
 @Composable

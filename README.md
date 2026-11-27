@@ -34,7 +34,9 @@ on the phone or Gemini in the cloud, and damage reports queue locally and sync t
   `emergency_numbers_json`, `safety_cards` with safe in-app defaults and real-time updates.
 - **App Check.** Debug provider for the judges' build, Play Integrity for release. App Check
   is installed before any AI Logic or Firestore call. If a token cannot be obtained, the
-  root screen shows an **"App Check failed"** snackbar with a Retry action.
+  root screen shows an **"App Check failed"** snackbar. Debug builds include the debug token
+  with a **Copy token** action so it can be registered in the Firebase console; release
+  builds offer Retry.
 - **Versioned card pack.** The full pack comes from the Remote Config key `safety_cards`.
   It is validated, cached for offline use, and the bundled JSON is the fallback when the
   remote value is missing, blank or malformed.
@@ -512,7 +514,7 @@ These are domain-level limitations to fix in Phase 3; they are not hidden by the
 | Symptom | Log line | Cause | Fix |
 | --- | --- | --- | --- |
 | Report stays **Queued**, no `reports` doc | `LanternReports: submit ... uid=false` or `LanternAuth: ... CONFIGURATION_NOT_FOUND` | Anonymous Auth is disabled | Authentication → Sign-in method → **Anonymous → Enable** |
-| "App Check failed" snackbar appears | `LanternAppCheck: App Check token failed` | Debug token not registered, Play Integrity not configured, or no network | Tap **Retry**; register the debug token (`./scripts/firebase_setup.sh`) or configure Play Integrity |
+| "App Check failed" snackbar appears | `LanternAppCheck: App Check token failed` | Debug token not registered, Play Integrity not configured, or no network | Tap **Copy token** (debug builds) and register it, or configure Play Integrity; then reopen the app |
 | Cloud answer falls back to card text | `LanternCloud: ... The Gemini API free tier is not available for this project` | The project has no Gemini API free tier | Enable billing at <https://aistudio.google.com/billing>, or use a project with a free tier |
 | Ask stays on the Ask screen with a Gemini Nano notice | `LanternOnDevice: OnDeviceModelStatus=UNAVAILABLE` | Emulator/unsupported device, or Nano not downloaded/enrolled. Matching is Nano-only, so the app deliberately blocks navigation | Use a supported physical device and enroll in the AICore Developer Preview |
 | Firestore `PERMISSION_DENIED` | `Report write rejected` | Rules not deployed or App Check token rejected | Deploy `firestore.rules` and register the token |

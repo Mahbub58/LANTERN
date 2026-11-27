@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.StateFlow
  */
 data class AppCheckFailure(
     val reason: String,
+    /** Debug builds only: the token to register in the Firebase console. */
+    val debugToken: String? = null,
     val atMillis: Long = System.currentTimeMillis(),
 )
 

@@ -9,6 +9,9 @@
     <string name="state_error_title">Something went wrong</string>
     <string name="state_error_body">Please try again. If this keeps happening and you are in danger, call your local emergency number.</string>
     <string name="app_check_failed">App Check failed. Secure access to Firebase is unavailable.</string>
+    <string name="app_check_failed_token">App Check failed. Debug token: %1$s</string>
+    <string name="app_check_copy_token">Copy token</string>
+    <string name="app_check_token_copied">Debug token copied. Register it in Firebase, then reopen the app.</string>
     <string name="app_check_retry">Retry</string>
     <string name="state_retry">Try again</string>
     <string name="back">Back</string>

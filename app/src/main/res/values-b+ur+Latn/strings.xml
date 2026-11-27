@@ -8,6 +8,9 @@
     <string name="state_error_title">Kuch ghalat ho gaya</string>
     <string name="state_error_body">Dobara koshish karein. Agar masla jari rahe aur aap khatre mein hain to apne muqami emergency number par call karein.</string>
     <string name="app_check_failed">App Check fail ho gaya. Firebase tak mehfooz rasai dastyab nahi.</string>
+    <string name="app_check_failed_token">App Check fail ho gaya. Debug token: %1$s</string>
+    <string name="app_check_copy_token">Token copy karein</string>
+    <string name="app_check_token_copied">Debug token copy ho gaya. Ise Firebase mein register karein, phir app dobara kholein.</string>
     <string name="app_check_retry">Dobara koshish</string>
     <string name="state_retry">Dobara koshish karein</string>
     <string name="back">Wapas</string>

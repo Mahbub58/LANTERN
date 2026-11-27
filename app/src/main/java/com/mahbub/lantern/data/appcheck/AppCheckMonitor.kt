@@ -1,10 +1,12 @@
 package com.mahbub.lantern.data.appcheck
 
+import android.content.Context
 import android.util.Log
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.appcheck.FirebaseAppCheck
 import com.mahbub.lantern.domain.repository.AppCheckFailure
 import com.mahbub.lantern.domain.repository.AppCheckRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -24,7 +26,9 @@ import kotlinx.coroutines.launch
  * an [AppCheckFailure]; the root screen shows it in a snackbar.
  */
 @Singleton
-class AppCheckMonitor @Inject constructor() : AppCheckRepository {
+class AppCheckMonitor @Inject constructor(
+    @ApplicationContext private val context: Context,
+) : AppCheckRepository {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val checking = AtomicBoolean(false)
@@ -45,6 +49,7 @@ class AppCheckMonitor @Inject constructor() : AppCheckRepository {
                 Log.w(TAG, "App Check token failed", t)
                 _failure.value = AppCheckFailure(
                     reason = t.message?.takeIf { it.isNotBlank() } ?: "App Check token unavailable",
+                    debugToken = AppCheckDebugToken.current(context),
                 )
             } finally {
                 checking.set(false)
