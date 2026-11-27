@@ -7,6 +7,8 @@
     <string name="state_loading">لوڈ ہو رہا ہے…</string>
     <string name="state_error_title">کچھ غلط ہو گیا</string>
     <string name="state_error_body">دوبارہ کوشش کریں۔ اگر مسئلہ جاری رہے اور آپ خطرے میں ہیں تو اپنے مقامی ایمرجنسی نمبر پر کال کریں۔</string>
+    <string name="app_check_failed">App Check ناکام ہو گیا۔ فائربیس تک محفوظ رسائی دستیاب نہیں۔</string>
+    <string name="app_check_retry">دوبارہ کوشش</string>
     <string name="state_retry">دوبارہ کوشش کریں</string>
     <string name="back">واپس</string>
     <string name="cancel">منسوخ</string>

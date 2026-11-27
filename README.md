@@ -33,7 +33,8 @@ on the phone or Gemini in the cloud, and damage reports queue locally and sync t
 - **Remote Config, live.** `confidence_threshold`, `cloud_fallback_enabled`, `alert_level`,
   `emergency_numbers_json`, `safety_cards` with safe in-app defaults and real-time updates.
 - **App Check.** Debug provider for the judges' build, Play Integrity for release. App Check
-  is installed before any AI Logic or Firestore call.
+  is installed before any AI Logic or Firestore call. If a token cannot be obtained, the
+  root screen shows an **"App Check failed"** snackbar with a Retry action.
 - **Versioned card pack.** The full pack comes from the Remote Config key `safety_cards`.
   It is validated, cached for offline use, and the bundled JSON is the fallback when the
   remote value is missing, blank or malformed.
@@ -41,7 +42,7 @@ on the phone or Gemini in the cloud, and damage reports queue locally and sync t
   are kept in a local queue until anonymous sign-in is possible, then written to Firestore.
 - **Privacy.** `PiiScrubber` runs before every cloud prompt. Coordinates never go to a
   model. Drafts never leave the phone; a report leaves only when the person presses Send.
-- **Tests.** 135 unit tests, 22 emulator-based Firestore rules tests, an always-on Firebase
+- **Tests.** 137 unit tests, 22 emulator-based Firestore rules tests, an always-on Firebase
   wiring test, and an opt-in airplane-mode offline flow test.
 - **Real accuracy numbers.** 40 questions (20 Roman Urdu, 10 Urdu, 10 English) and 20
   reports are measured by `AccuracyReportTest` as a lexical baseline; runtime matching is
@@ -190,7 +191,7 @@ The hybrid API is experimental, so the AI files opt in with
 | **Authentication** | Anonymous sign-in; `uid` scopes every report |
 | **Firestore** | `reports`, realtime `alerts` + `warnings` feeds; unlimited offline cache; `hasPendingWrites` drives the sync badge |
 | **Remote Config** | Live threshold, cloud fallback, alert level, emergency numbers and the full `safety_cards` JSON pack |
-| **App Check** | Debug provider in debug, Play Integrity in release; installed before AI/Firestore |
+| **App Check** | Debug provider in debug, Play Integrity in release; installed before AI/Firestore; failures appear in a global snackbar with Retry |
 
 ---
 
@@ -209,7 +210,7 @@ app/src/main/assets/safety_cards.json     6 cards (3 flood, 3 earthquake)
 app/src/main/assets/test/questions.csv    40 retrieval questions
 app/src/main/assets/test/reports.csv      20 report-field cases
 app/src/main/res/values*/strings.xml      EN, UR, Roman Urdu
-app/src/test/                             135 JVM tests
+app/src/test/                             137 JVM tests
 app/src/androidTest/                      Firebase wiring + opt-in offline flow
 firestore.rules                           security rules
 firestore.indexes.json                    no composite indexes required
@@ -449,7 +450,7 @@ denied to the app; only the console/Admin SDK can publish.
 ## Tests
 
 ```bash
-# 135 JVM tests: Nano-only routing, safety, PII, use cases, ViewModels, data helpers
+# 137 JVM tests: Nano-only routing, App Check, safety, PII, use cases, ViewModels, data helpers
 ./gradlew :app:testDebugUnitTest
 
 # 22 Firestore emulator rules tests (Node)
@@ -511,7 +512,7 @@ These are domain-level limitations to fix in Phase 3; they are not hidden by the
 | Symptom | Log line | Cause | Fix |
 | --- | --- | --- | --- |
 | Report stays **Queued**, no `reports` doc | `LanternReports: submit ... uid=false` or `LanternAuth: ... CONFIGURATION_NOT_FOUND` | Anonymous Auth is disabled | Authentication → Sign-in method → **Anonymous → Enable** |
-| Firestore/AI calls rejected | `FirebaseAppCheck: Debug token was rejected by server` | Debug token not registered | `./scripts/firebase_setup.sh`, or register the token from logcat |
+| "App Check failed" snackbar appears | `LanternAppCheck: App Check token failed` | Debug token not registered, Play Integrity not configured, or no network | Tap **Retry**; register the debug token (`./scripts/firebase_setup.sh`) or configure Play Integrity |
 | Cloud answer falls back to card text | `LanternCloud: ... The Gemini API free tier is not available for this project` | The project has no Gemini API free tier | Enable billing at <https://aistudio.google.com/billing>, or use a project with a free tier |
 | Ask stays on the Ask screen with a Gemini Nano notice | `LanternOnDevice: OnDeviceModelStatus=UNAVAILABLE` | Emulator/unsupported device, or Nano not downloaded/enrolled. Matching is Nano-only, so the app deliberately blocks navigation | Use a supported physical device and enroll in the AICore Developer Preview |
 | Firestore `PERMISSION_DENIED` | `Report write rejected` | Rules not deployed or App Check token rejected | Deploy `firestore.rules` and register the token |

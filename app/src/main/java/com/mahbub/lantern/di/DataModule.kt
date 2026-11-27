@@ -1,5 +1,6 @@
 package com.mahbub.lantern.di
 
+import com.mahbub.lantern.data.appcheck.AppCheckMonitor
 import com.mahbub.lantern.data.remote.AndroidConnectivityRepository
 import com.mahbub.lantern.data.remote.AndroidLocationRepository
 import com.mahbub.lantern.data.remote.FirebaseAlertRepository
@@ -8,6 +9,7 @@ import com.mahbub.lantern.data.remote.FirebaseConfigRepository
 import com.mahbub.lantern.data.remote.FirebaseReportRepository
 import com.mahbub.lantern.data.remote.FirebaseSafetyCardRepository
 import com.mahbub.lantern.domain.repository.AlertRepository
+import com.mahbub.lantern.domain.repository.AppCheckRepository
 import com.mahbub.lantern.domain.repository.AuthRepository
 import com.mahbub.lantern.domain.repository.ConfigRepository
 import com.mahbub.lantern.domain.repository.ConnectivityRepository
@@ -28,6 +30,10 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class DataModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindAppCheckRepository(impl: AppCheckMonitor): AppCheckRepository
 
     @Binds
     @Singleton

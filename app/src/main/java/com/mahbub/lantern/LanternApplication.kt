@@ -2,11 +2,11 @@ package com.mahbub.lantern
 
 import android.app.Application
 import android.util.Log
-import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.PersistentCacheSettings
 import com.mahbub.lantern.data.appcheck.AppCheckInstaller
+import com.mahbub.lantern.data.appcheck.AppCheckMonitor
 import com.mahbub.lantern.domain.repository.AuthRepository
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
@@ -21,16 +21,18 @@ class LanternApplication : Application() {
     @Inject
     lateinit var authRepository: AuthRepository
 
+    @Inject
+    lateinit var appCheckMonitor: AppCheckMonitor
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
         super.onCreate()
 
         // App Check must be installed before any AI Logic or Firestore call.
+        // The monitor requests the first token and reports failures to the UI.
         AppCheckInstaller.install(this)
-        FirebaseAppCheck.getInstance().getAppCheckToken(false)
-            .addOnSuccessListener { Log.i(TAG, "App Check token acquired") }
-            .addOnFailureListener { Log.w(TAG, "App Check token failed", it) }
+        appCheckMonitor.start()
 
         // Unlimited persistent cache keeps reports and alerts usable offline.
         runCatching {
