@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,6 +40,7 @@ import com.mahbub.lantern.domain.model.Report
 import com.mahbub.lantern.domain.model.ReportStatus
 import com.mahbub.lantern.domain.model.SyncState
 import com.mahbub.lantern.presentation.components.EmptyState
+import com.mahbub.lantern.presentation.components.LanternAppBar
 import com.mahbub.lantern.presentation.components.LanternCard
 import com.mahbub.lantern.presentation.components.LanternPreview
 import com.mahbub.lantern.presentation.components.LanternTextButton
@@ -51,6 +53,7 @@ fun ReportConfirmationScreenRoute(
     onViewReports: () -> Unit,
     onDone: () -> Unit,
     onNewReport: () -> Unit,
+    onOpenSettings: () -> Unit,
     viewModel: ReportConfirmationViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -59,6 +62,7 @@ fun ReportConfirmationScreenRoute(
         onViewReports = onViewReports,
         onDone = onDone,
         onNewReport = onNewReport,
+        onOpenSettings = onOpenSettings,
     )
 }
 
@@ -68,39 +72,53 @@ fun ReportConfirmationScreen(
     onViewReports: () -> Unit,
     onDone: () -> Unit,
     onNewReport: () -> Unit,
+    onOpenSettings: () -> Unit,
 ) {
     val colors = LanternTheme.colors
 
-    when {
-        state.isLoading -> Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(colors.background),
-            contentAlignment = Alignment.Center,
-        ) {
-            LoadingState(message = stringResource(R.string.confirm_loading))
-        }
-
-        state.notFound -> Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(colors.background),
-            contentAlignment = Alignment.Center,
-        ) {
-            EmptyState(
-                title = stringResource(R.string.confirm_not_found),
-                body = stringResource(R.string.reports_empty_body),
-                actionLabel = stringResource(R.string.confirm_new_report),
-                onAction = onNewReport,
+    Scaffold(
+        containerColor = colors.background,
+        topBar = {
+            LanternAppBar(
+                isOnline = state.isOnline,
+                onOpenSettings = onOpenSettings,
             )
-        }
+        },
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .background(colors.background),
+        ) {
+            when {
+                state.isLoading -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    LoadingState(message = stringResource(R.string.confirm_loading))
+                }
 
-        else -> ConfirmationContent(
-            report = state.report,
-            onViewReports = onViewReports,
-            onDone = onDone,
-            onNewReport = onNewReport,
-        )
+                state.notFound -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    EmptyState(
+                        title = stringResource(R.string.confirm_not_found),
+                        body = stringResource(R.string.reports_empty_body),
+                        actionLabel = stringResource(R.string.confirm_new_report),
+                        onAction = onNewReport,
+                    )
+                }
+
+                else -> ConfirmationContent(
+                    report = state.report,
+                    onViewReports = onViewReports,
+                    onDone = onDone,
+                    onNewReport = onNewReport,
+                )
+            }
+        }
     }
 }
 
@@ -200,6 +218,7 @@ private fun ConfirmationQueuedPreview() {
             onViewReports = {},
             onDone = {},
             onNewReport = {},
+            onOpenSettings = {},
         )
     }
 }
@@ -216,6 +235,7 @@ private fun ConfirmationSentPreview() {
             onViewReports = {},
             onDone = {},
             onNewReport = {},
+            onOpenSettings = {},
         )
     }
 }
@@ -229,6 +249,7 @@ private fun ConfirmationMissingPreview() {
             onViewReports = {},
             onDone = {},
             onNewReport = {},
+            onOpenSettings = {},
         )
     }
 }

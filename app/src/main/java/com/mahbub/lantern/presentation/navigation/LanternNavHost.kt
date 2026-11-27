@@ -89,6 +89,7 @@ fun LanternNavHost(
                         launchSingleTop = true
                     }
                 },
+                onOpenSettings = { navController.navigate(SettingsRoute) },
             )
         }
 
