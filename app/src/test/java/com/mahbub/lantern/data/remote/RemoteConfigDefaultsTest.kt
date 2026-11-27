@@ -20,7 +20,7 @@ class RemoteConfigDefaultsTest {
         )
         assertEquals(true, values[RemoteConfigDefaults.CLOUD_FALLBACK_ENABLED])
         assertEquals(AlertLevel.WARNING.name, values[RemoteConfigDefaults.ALERT_LEVEL])
-        assertEquals("1.0.0", values[RemoteConfigDefaults.CARDS_VERSION])
+        assertEquals("", values[RemoteConfigDefaults.SAFETY_CARDS_JSON])
         assertTrue(values[RemoteConfigDefaults.EMERGENCY_NUMBERS_JSON] is String)
     }
 

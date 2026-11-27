@@ -17,7 +17,7 @@ object RemoteConfigDefaults {
     const val CLOUD_FALLBACK_ENABLED = "cloud_fallback_enabled"
     const val ALERT_LEVEL = "alert_level"
     const val EMERGENCY_NUMBERS_JSON = "emergency_numbers_json"
-    const val CARDS_VERSION = "cards_version"
+    const val SAFETY_CARDS_JSON = "safety_cards"
 
     val emergencyNumbers: List<EmergencyNumber> = listOf(
         EmergencyNumber(
@@ -54,7 +54,8 @@ object RemoteConfigDefaults {
         CLOUD_FALLBACK_ENABLED to true,
         ALERT_LEVEL to AlertLevel.WARNING.name,
         EMERGENCY_NUMBERS_JSON to emergencyNumbersJson,
-        CARDS_VERSION to "1.0.0",
+        // Empty means "no remote pack configured": the bundled asset is used.
+        SAFETY_CARDS_JSON to "",
     )
 }
 

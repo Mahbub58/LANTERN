@@ -28,11 +28,12 @@ on the phone or Gemini in the cloud, and damage reports queue locally and sync t
   restarting the app. The sync badge is derived from `snapshot.metadata.hasPendingWrites`
   (QUEUED → SENT). Citizens can create reports and read only their own.
 - **Remote Config, live.** `confidence_threshold`, `cloud_fallback_enabled`, `alert_level`,
-  `emergency_numbers_json`, `cards_version` with safe in-app defaults and real-time updates.
+  `emergency_numbers_json`, `safety_cards` with safe in-app defaults and real-time updates.
 - **App Check.** Debug provider for the judges' build, Play Integrity for release. App Check
   is installed before any AI Logic or Firestore call.
-- **Versioned card pack.** Bundled JSON is the fallback; a newer `config/safety_cards`
-  document is validated, cached and used. A malformed pack is ignored.
+- **Versioned card pack.** The full pack comes from the Remote Config key `safety_cards`.
+  It is validated, cached for offline use, and the bundled JSON is the fallback when the
+  remote value is missing, blank or malformed.
 - **Offline queue that survives auth gaps.** If the very first launch is offline, reports
   are kept in a local queue until anonymous sign-in is possible, then written to Firestore.
 - **Privacy.** `PiiScrubber` runs before every cloud prompt. Coordinates never go to a
@@ -177,8 +178,8 @@ The hybrid API is experimental, so the AI files opt in with
 | --- | --- |
 | **AI Logic** | On-device Gemini Nano 4 (`ONLY_ON_DEVICE`) and cloud Gemini (`ONLY_IN_CLOUD`); `inferenceSource` is logged |
 | **Authentication** | Anonymous sign-in; `uid` scopes every report |
-| **Firestore** | `reports`, realtime `alerts` + `warnings` feeds, `config/safety_cards`; unlimited offline cache; `hasPendingWrites` drives the sync badge |
-| **Remote Config** | Live threshold, cloud fallback, alert level, emergency numbers and card version |
+| **Firestore** | `reports`, realtime `alerts` + `warnings` feeds; unlimited offline cache; `hasPendingWrites` drives the sync badge |
+| **Remote Config** | Live threshold, cloud fallback, alert level, emergency numbers and the full `safety_cards` JSON pack |
 | **App Check** | Debug provider in debug, Play Integrity in release; installed before AI/Firestore |
 
 ---
@@ -283,11 +284,15 @@ Create these parameters in **Remote Config** with the same values as
 | `cloud_fallback_enabled` | Boolean | `true` |
 | `alert_level` | String | `WARNING` |
 | `emergency_numbers_json` | String | `[{"label":"Rescue 1122","number":"1122",…}]` |
-| `cards_version` | String | `1.0.0` |
+| `safety_cards` | String | *(empty — bundled asset is used)* |
 
 The app calls `setDefaultsAsync` first, fetches and activates, then listens with
 `addOnConfigUpdateListener`. Publishing a new value updates the running app without a
 restart. It also re-fetches when connectivity returns.
+
+Set `safety_cards` to the **full JSON bundle** (the same shape as
+`app/src/main/assets/safety_cards.json`). Use the **String** parameter type and paste the
+entire JSON. If the key is empty, missing or invalid, the bundled asset is used.
 
 ### 6. AI Logic and Gemini Nano 4
 
@@ -299,20 +304,20 @@ restart. It also re-fetches when connectivity returns.
 3. On a device without AICore/Nano, the app shows **Unavailable on this device** in Settings
    and falls back to the cloud or the card text.
 
-### 7. Optional: publish a newer card pack
+### 7. Publish a newer card pack
 
-Create `config/safety_cards` in Firestore:
+In **Remote Config**, edit the `safety_cards` parameter and paste the full bundle JSON:
 
 ```json
 {
   "version": "1.1.0",
-  "json": "{\"version\":\"1.1.0\",\"cards\":[ … same shape as safety_cards.json … ]}"
+  "cards": [ … same shape as app/src/main/assets/safety_cards.json … ]
 }
 ```
 
-The app validates the pack, caches it, and uses it only if its version is newer than the
-bundled `1.0.0-demo`. A bad pack is ignored. Set `cards_version` to the same value so the
-console and the app agree.
+Publish the change. The running app applies the pack immediately, validates every card,
+and caches it for offline use. A missing or malformed value never replaces the last good
+pack; the bundled `1.0.0-demo` asset remains the final fallback.
 
 ---
 
@@ -379,9 +384,6 @@ warnings/{warningId}             // active hazard warnings
   createdAt: timestamp           // Firestore Timestamp; epoch millis/seconds accepted
 
 responders/{responderId}      // not readable by the citizen client
-config/safety_cards           // read-only to signed-in citizens
-  version: string
-  json: string                // full SafetyCardBundleDto
 ```
 
 `syncState` is not stored. It is derived from Firestore snapshot metadata, so a report can
@@ -523,7 +525,7 @@ adb logcat -s LanternOnDevice LanternCloud LanternReports LanternAuth LanternApp
 - [x] **Offline persistence.** Firestore unlimited cache; `hasPendingWrites` drives
   QUEUED → SENT; drafts are local.
 - [x] **Rules.** `firestore.rules` plus 22 emulator tests covering every table row.
-- [x] **Remote Config.** Five keys, safe defaults, real-time updates.
+- [x] **Remote Config.** Five keys including `safety_cards`, safe defaults, real-time updates.
 - [x] **Privacy.** PII scrubbed before every cloud prompt; no coordinates to models.
 - [x] **License visible.** [LICENSE](LICENSE), Apache 2.0.
 - [x] **No secrets in the repo.** `app/google-services.json` and the debug token are not
@@ -544,7 +546,7 @@ adb logcat -s LanternOnDevice LanternCloud LanternReports LanternAuth LanternApp
 7. Enroll the test device in the **AICore Developer Preview** for Gemini Nano 4:
    <https://developers.google.com/ml-kit/genai/aicore-dev-preview>
 8. Configure **Play Integrity** for the release build.
-9. Optional: publish `config/safety_cards` for a newer card pack.
+9. Optional: publish the `safety_cards` JSON in Remote Config for a newer card pack.
 10. If cloud answers are required, enable Gemini API billing for the project:
     <https://aistudio.google.com/billing>. The on-device path does not need billing.
 

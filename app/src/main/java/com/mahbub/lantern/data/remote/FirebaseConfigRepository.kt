@@ -57,7 +57,6 @@ class FirebaseConfigRepository @Inject constructor(
     private val localRouting = MutableStateFlow<RoutingConfig?>(null)
     private val localAlertLevel = MutableStateFlow<AlertLevel?>(null)
     private val lastInference = MutableStateFlow<InferenceSource?>(null)
-    private var lastCardsVersion: String? = null
 
     override val language: Flow<AppLanguage> = languageFlow.asStateFlow()
     override val languageChosen: Flow<Boolean> = languageChosenFlow.asStateFlow()
@@ -152,16 +151,11 @@ class FirebaseConfigRepository @Inject constructor(
             emergencyNumbers = numbers,
         )
 
-        // A new cards_version is the signal to look for a newer Firestore pack.
-        val cardsVersion = runCatching {
-            remoteConfig.getString(RemoteConfigDefaults.CARDS_VERSION)
-        }.getOrDefault("")
-        if (cardsVersion.isNotBlank() && cardsVersion != lastCardsVersion) {
-            lastCardsVersion = cardsVersion
-            scope.launch {
-                runCatching { safetyCardRepository.refresh() }
-                    .onFailure { Log.i(TAG, "Card pack refresh deferred: ${it.message}") }
-            }
+        // The `safety_cards` Remote Config value is the primary card pack.
+        // refresh() keeps the cached/bundled pack when the value is missing.
+        scope.launch {
+            runCatching { safetyCardRepository.refresh() }
+                .onFailure { Log.i(TAG, "Card pack refresh deferred: ${it.message}") }
         }
     }
 

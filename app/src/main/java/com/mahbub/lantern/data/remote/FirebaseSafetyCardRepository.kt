@@ -2,12 +2,10 @@ package com.mahbub.lantern.data.remote
 
 import android.content.Context
 import android.util.Log
-import com.google.android.gms.tasks.Tasks
-import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.mahbub.lantern.data.asset.SafetyCardBundleDto
 import com.mahbub.lantern.data.mapper.toDomainValidated
 import com.mahbub.lantern.domain.model.SafetyCard
-import com.mahbub.lantern.domain.repository.AuthRepository
 import com.mahbub.lantern.domain.repository.SafetyCardRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -19,28 +17,32 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 
 /**
- * Bundled cards are the offline fallback. A newer pack can be published as
- * `config/safety_cards` in Firestore (fields `version` and `json`); it is
- * validated, cached locally and used from then on. A bad or partial remote pack
- * is ignored so the vetted bundled guidance is never replaced by junk.
+ * Safety cards come from the Remote Config key `safety_cards`, which holds the
+ * full card-pack JSON as a string.
+ *
+ * Offline behaviour:
+ *  - Remote Config itself persists the last fetched value on disk.
+ *  - The validated pack is also cached in SharedPreferences, so the last good
+ *    pack is active immediately on the next launch, even with no signal.
+ *  - If `safety_cards` is missing/blank/invalid, the bundled
+ *    `assets/safety_cards.json` pack is used.
+ *
+ * A bad remote pack never replaces the last good cached or bundled pack.
  */
 @Singleton
 class FirebaseSafetyCardRepository @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val authRepository: AuthRepository,
 ) : SafetyCardRepository {
 
     private val json = Json { ignoreUnknownKeys = true }
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    private val remoteConfig = FirebaseRemoteConfig.getInstance()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val mutex = Mutex()
     private val loaded = CompletableDeferred<Unit>()
@@ -48,6 +50,9 @@ class FirebaseSafetyCardRepository @Inject constructor(
 
     private var bundled: CardPack? = null
     private var active: CardPack? = null
+
+    /** Raw JSON currently active, used to skip re-parsing identical values. */
+    private var activeRaw: String? = null
 
     init {
         scope.launch {
@@ -76,43 +81,43 @@ class FirebaseSafetyCardRepository @Inject constructor(
 
     override suspend fun refresh() {
         loaded.await()
-        applyCachedPack()
 
-        withTimeoutOrNull(AUTH_WAIT_MS) {
-            authRepository.uid.filterNotNull().first()
-        } ?: return
+        val raw = runCatching {
+            remoteConfig.getString(RemoteConfigDefaults.SAFETY_CARDS_JSON).trim()
+        }.onFailure {
+            Log.w(TAG, "Remote Config safety_cards unavailable", it)
+        }.getOrDefault("")
 
-        val document = runCatching {
-            Tasks.await(
-                FirebaseFirestore.getInstance()
-                    .collection(CONFIG_COLLECTION)
-                    .document(CARDS_DOCUMENT)
-                    .get(),
-            )
-        }.onFailure { Log.i(TAG, "Remote card pack unavailable: ${it.message}") }
-            .getOrNull() ?: return
-
-        val remoteVersion = document.getString("version")?.trim().orEmpty()
-        val raw = document.getString("json")?.trim().orEmpty()
-        if (remoteVersion.isEmpty() || raw.isEmpty()) return
-
-        val bundle = runCatching { json.decodeFromString<SafetyCardBundleDto>(raw) }
-            .onFailure { Log.w(TAG, "Remote card pack is not valid JSON", it) }
-            .getOrNull() ?: return
-        val cards = runCatching { bundle.cards.toDomainValidated() }
-            .onFailure { Log.w(TAG, "Remote card pack failed validation", it) }
-            .getOrNull() ?: return
-        val pack = CardPack(bundle.version.ifBlank { remoteVersion }, cards)
-
-        mutex.withLock {
-            val currentVersion = active?.version ?: bundled?.version ?: "0.0.0"
-            if (VersionComparator.isNewer(pack.version, currentVersion)) {
-                active = pack
-                cache(pack, raw)
-                versionFlow.value = "${pack.version} (remote)"
-                Log.i(TAG, "Loaded remote card pack ${pack.version}")
-            }
+        if (raw.isBlank() || raw == "null") {
+            Log.i(TAG, "No Remote Config safety_cards; using ${activeLabel()}")
+            return
         }
+        if (raw == activeRaw) return
+
+        applyRemote(raw)
+    }
+
+    private suspend fun applyRemote(raw: String) {
+        val bundle = runCatching { json.decodeFromString<SafetyCardBundleDto>(raw) }
+            .onFailure { Log.w(TAG, "Remote Config safety_cards is not valid JSON", it) }
+            .getOrNull() ?: return
+
+        val cards = runCatching { bundle.cards.toDomainValidated() }
+            .onFailure { Log.w(TAG, "Remote Config safety_cards failed validation", it) }
+            .getOrNull() ?: return
+        if (cards.isEmpty()) {
+            Log.w(TAG, "Remote Config safety_cards has no valid cards")
+            return
+        }
+
+        val pack = CardPack(bundle.version.ifBlank { "remote" }, cards)
+        mutex.withLock {
+            active = pack
+            activeRaw = raw
+            cache(pack, raw)
+            versionFlow.value = "${pack.version} (remote config)"
+        }
+        Log.i(TAG, "Loaded Remote Config card pack ${pack.version} (${cards.size} cards)")
     }
 
     private fun ensureLoadedLocked() {
@@ -124,23 +129,16 @@ class FirebaseSafetyCardRepository @Inject constructor(
         bundled = bundledPack
 
         val cached = readCached()
-        active = if (cached != null && VersionComparator.isNewer(cached.version, bundledPack.version)) {
-            versionFlow.value = "${cached.version} (remote)"
-            cached
+        if (cached != null) {
+            active = cached
+            activeRaw = prefs.getString(KEY_JSON, null)
+            versionFlow.value = "${cached.version} (cached)"
+            Log.i(TAG, "Using cached card pack ${cached.version} (${cached.cards.size} cards)")
         } else {
+            active = bundledPack
+            activeRaw = null
             versionFlow.value = "${bundledPack.version} (bundled)"
-            bundledPack
-        }
-    }
-
-    private suspend fun applyCachedPack() {
-        val cached = readCached() ?: return
-        mutex.withLock {
-            val currentVersion = active?.version ?: return@withLock
-            if (VersionComparator.isNewer(cached.version, currentVersion)) {
-                active = cached
-                versionFlow.value = "${cached.version} (remote)"
-            }
+            Log.i(TAG, "Using bundled card pack ${bundledPack.version} (${bundledPack.cards.size} cards)")
         }
     }
 
@@ -160,6 +158,12 @@ class FirebaseSafetyCardRepository @Inject constructor(
             .apply()
     }
 
+    private fun activeLabel(): String = if (activeRaw != null) {
+        "cached pack ${active?.version}"
+    } else {
+        "bundled pack ${active?.version}"
+    }
+
     private data class CardPack(
         val version: String,
         val cards: List<SafetyCard>,
@@ -168,11 +172,8 @@ class FirebaseSafetyCardRepository @Inject constructor(
     private companion object {
         const val TAG = "LanternCards"
         const val ASSET_NAME = "safety_cards.json"
-        const val CONFIG_COLLECTION = "config"
-        const val CARDS_DOCUMENT = "safety_cards"
         const val PREFS = "lantern_cards"
-        const val KEY_JSON = "remote_json"
-        const val KEY_VERSION = "remote_version"
-        const val AUTH_WAIT_MS = 8_000L
+        const val KEY_JSON = "remote_config_json"
+        const val KEY_VERSION = "remote_config_version"
     }
 }
