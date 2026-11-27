@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mahbub.lantern.R
+import com.mahbub.lantern.domain.ai.NanoStatus
 import com.mahbub.lantern.domain.model.Alert
 import com.mahbub.lantern.domain.model.AlertLevel
 import com.mahbub.lantern.domain.model.AppLanguage
@@ -196,6 +197,10 @@ fun AskScreen(
                 )
             }
 
+            if (state.nanoStatus != NanoStatus.READY || state.nanoError) {
+                NanoNotice(status = state.nanoStatus)
+            }
+
             Text(
                 text = stringResource(R.string.ask_privacy_note),
                 style = MaterialTheme.typography.bodySmall,
@@ -213,11 +218,46 @@ fun AskScreen(
             PrimaryGradientButton(
                 text = stringResource(R.string.ask_button),
                 onClick = onAsk,
+                enabled = !state.isCheckingNano,
+                loading = state.isCheckingNano,
                 glow = true,
             )
 
             Spacer(Modifier.heightIn(min = 4.dp))
         }
+    }
+}
+
+@Composable
+private fun NanoNotice(status: NanoStatus) {
+    val colors = LanternTheme.colors
+    val shape = RoundedCornerShape(18.dp)
+    val message = when (status) {
+        NanoStatus.NOT_DOWNLOADED -> R.string.ask_nano_not_downloaded
+        NanoStatus.DOWNLOADING -> R.string.ask_nano_downloading
+        else -> R.string.ask_nano_unavailable
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(colors.amber.copy(alpha = 0.08f))
+            .border(1.dp, colors.amber.copy(alpha = 0.5f), shape)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Warning,
+            contentDescription = null,
+            tint = colors.amber,
+            modifier = Modifier.size(18.dp),
+        )
+        Text(
+            text = stringResource(message),
+            style = MaterialTheme.typography.bodySmall,
+            color = colors.textPrimary,
+        )
     }
 }
 
@@ -516,6 +556,7 @@ private fun AskPreview() {
                 isOnline = true,
                 language = AppLanguage.EN,
                 isLoading = false,
+                nanoStatus = NanoStatus.READY,
                 latestAlert = Alert(
                     id = "a1",
                     level = AlertLevel.WARNING,
@@ -548,6 +589,7 @@ private fun AskOfflinePreview() {
                 isOnline = false,
                 language = AppLanguage.EN,
                 isLoading = false,
+                nanoStatus = NanoStatus.READY,
             ),
             onQueryChange = {},
             onAsk = {},

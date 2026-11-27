@@ -18,6 +18,16 @@ enum class NanoStatus {
 interface OnDeviceInference {
     val status: Flow<NanoStatus>
     suspend fun isAvailable(): Boolean
+
+    /**
+     * Understands the question in any supported language and returns the id of
+     * the best matching card, or `null` when no card is a safe match.
+     *
+     * Throws when Nano is not ready or inference fails, so the router can tell
+     * "no card matched" apart from "the model failed".
+     */
+    suspend fun matchCard(question: String, cards: List<SafetyCard>): String?
+
     suspend fun answer(question: String, card: SafetyCard, language: AppLanguage): String
 }
 

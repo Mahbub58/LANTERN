@@ -3,6 +3,7 @@ package com.mahbub.lantern.domain.ai
 import com.mahbub.lantern.domain.model.Answer
 import com.mahbub.lantern.domain.model.AppLanguage
 import com.mahbub.lantern.domain.model.InferenceSource
+import com.mahbub.lantern.domain.model.OnDeviceIssue
 import com.mahbub.lantern.domain.model.RoutingConfig
 import com.mahbub.lantern.domain.model.SafetyCard
 import javax.inject.Inject
@@ -10,15 +11,23 @@ import javax.inject.Inject
 /**
  * The routing policy. Pure Kotlin and fully unit tested.
  *
- * 1. Retrieve the best card with a lexical scorer; its score is the confidence.
- * 2. Nothing above the minimum -> NoMatch (emergency numbers, no model call).
- * 3. Score >= threshold -> on-device, strictly grounded in the card JSON.
- * 4. Score below threshold, on-device unavailable/invalid -> cloud when online
- *    and enabled (PII scrubbed), otherwise the vetted card text.
- * 5. Every result carries the card and an [InferenceSource] for the UI badge.
+ * **Matching is Gemini Nano only.** There is no keyword or lexical fallback:
+ * Nano reads the question in English, Urdu or Roman Urdu and returns the id of
+ * the best safety card. If Nano is not ready the router returns a NoMatch with
+ * [OnDeviceIssue.UNAVAILABLE]; the Ask screen checks Nano before navigating, so
+ * the user never reaches this state through the UI.
+ *
+ * 1. Nano unavailable -> NoMatch + UNAVAILABLE. No generation, no cloud.
+ * 2. Nano match fails -> NoMatch + FAILED.
+ * 3. Nano finds no card -> NoMatch with no error (the question is genuinely
+ *    outside the card pack; the UI shows emergency numbers).
+ * 4. Card matched -> grounded on-device answer, strictly from the card JSON.
+ * 5. On-device generation fails -> cloud when online and enabled (PII scrubbed),
+ *    otherwise the matched card's vetted text. The answer carries
+ *    [OnDeviceIssue.FAILED] so the UI can say Nano did not produce it.
+ * 6. Every result carries the card and an [InferenceSource] for the UI badge.
  */
 class AiRouter @Inject constructor(
-    private val retriever: LexicalSafetyCardRetriever,
     private val onDeviceInference: OnDeviceInference,
     private val cloudInference: CloudInference,
     private val piiScrubber: PiiScrubber,
@@ -37,31 +46,34 @@ class AiRouter @Inject constructor(
         val safeConfig = config.sanitized()
         if (question.isBlank()) return noMatch(0f)
 
-        val scored = retriever.bestCard(question, cards)
-        if (scored == null || scored.score < RoutingConfig.MINIMUM_MATCH_SCORE) {
-            return noMatch(scored?.score ?: 0f)
+        // Matching is done by Gemini Nano and nothing else.
+        val onDeviceReady = runCatching { onDeviceInference.isAvailable() }.getOrDefault(false)
+        if (!onDeviceReady) {
+            return noMatch(0f, OnDeviceIssue.UNAVAILABLE)
         }
 
-        val card = scored.card
-        val canUseCloud = isOnline && safeConfig.cloudFallbackEnabled
+        val matchedId = runCatching { onDeviceInference.matchCard(question, cards) }
+            .getOrElse { return noMatch(0f, OnDeviceIssue.FAILED) }
+        val card = matchedId?.let { id -> cards.firstOrNull { it.id == id } }
+            ?: return noMatch(0f)
 
-        if (!forceCloud && scored.score >= safeConfig.confidenceThreshold) {
-            val onDeviceAvailable = runCatching { onDeviceInference.isAvailable() }.getOrDefault(false)
-            if (onDeviceAvailable) {
-                val raw = runCatching { onDeviceInference.answer(question, card, language) }.getOrNull()
-                val validated = raw?.let { answerValidator.validate(it, card, language) }
-                if (!validated.isNullOrBlank()) {
-                    return Answer(
-                        card = card,
-                        text = validated,
-                        source = InferenceSource.ON_DEVICE,
-                        retrievalScore = scored.score,
-                    )
-                }
+        if (!forceCloud) {
+            val raw = runCatching { onDeviceInference.answer(question, card, language) }.getOrNull()
+            val validated = raw?.let { answerValidator.validate(it, card, language) }
+            if (!validated.isNullOrBlank()) {
+                return Answer(
+                    card = card,
+                    text = validated,
+                    source = InferenceSource.ON_DEVICE,
+                )
             }
         }
 
-        if (canUseCloud) {
+        // Generation failed after a successful match, or a deeper cloud answer
+        // was requested. A deliberate deeper request is not a Nano error.
+        val issue = if (forceCloud) null else OnDeviceIssue.FAILED
+
+        if (isOnline && safeConfig.cloudFallbackEnabled) {
             val scrubbed = piiScrubber.scrub(question)
             val cloudAnswer = runCatching {
                 cloudInference.answer(scrubbed, card, language)
@@ -72,7 +84,7 @@ class AiRouter @Inject constructor(
                     text = cloudAnswer!!.trim(),
                     source = InferenceSource.CLOUD,
                     isDeeper = forceCloud,
-                    retrievalScore = scored.score,
+                    onDeviceIssue = issue,
                 )
             }
         }
@@ -81,7 +93,7 @@ class AiRouter @Inject constructor(
             card = card,
             text = card.title.forLanguage(language),
             source = InferenceSource.CARD_TEXT,
-            retrievalScore = scored.score,
+            onDeviceIssue = issue,
         )
     }
 
@@ -94,12 +106,13 @@ class AiRouter @Inject constructor(
         return true
     }
 
-    private fun noMatch(score: Float) = Answer(
+    private fun noMatch(score: Float, issue: OnDeviceIssue? = null) = Answer(
         card = null,
         text = "",
         source = InferenceSource.CARD_TEXT,
         isNoMatch = true,
         retrievalScore = score,
+        onDeviceIssue = issue,
     )
 
     private companion object {

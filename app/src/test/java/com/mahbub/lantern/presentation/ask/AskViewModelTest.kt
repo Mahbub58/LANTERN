@@ -1,13 +1,16 @@
 package com.mahbub.lantern.presentation.ask
 
 import app.cash.turbine.test
+import com.mahbub.lantern.domain.ai.NanoStatus
 import com.mahbub.lantern.domain.model.Alert
 import com.mahbub.lantern.domain.model.AlertLevel
 import com.mahbub.lantern.domain.model.AppLanguage
 import com.mahbub.lantern.domain.model.LocalizedText
+import com.mahbub.lantern.domain.usecase.IsNanoReadyUseCase
 import com.mahbub.lantern.domain.usecase.ObserveAlertsUseCase
 import com.mahbub.lantern.domain.usecase.ObserveConnectivityUseCase
 import com.mahbub.lantern.domain.usecase.ObserveLanguageUseCase
+import com.mahbub.lantern.domain.usecase.ObserveNanoStatusUseCase
 import com.mahbub.lantern.domain.usecase.RefreshAlertsUseCase
 import com.mahbub.lantern.testutil.MainDispatcherRule
 import com.mahbub.lantern.testutil.awaitUntil
@@ -16,6 +19,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -45,13 +49,25 @@ class AskViewModelTest {
     private val observeConnectivity = mockk<ObserveConnectivityUseCase>()
     private val observeLanguage = mockk<ObserveLanguageUseCase>()
     private val refreshAlerts = mockk<RefreshAlertsUseCase>()
+    private val isNanoReady = mockk<IsNanoReadyUseCase>()
+    private val observeNanoStatus = mockk<ObserveNanoStatusUseCase>()
+    private val nanoStatus = MutableStateFlow(NanoStatus.READY)
 
     private fun viewModel(): AskViewModel {
         every { observeAlerts() } returns alerts
         every { observeConnectivity() } returns online
         every { observeLanguage() } returns language
+        every { observeNanoStatus() } returns nanoStatus
         coEvery { refreshAlerts() } returns Unit
-        return AskViewModel(observeAlerts, observeConnectivity, observeLanguage, refreshAlerts)
+        coEvery { isNanoReady() } returns true
+        return AskViewModel(
+            observeAlerts,
+            observeConnectivity,
+            observeLanguage,
+            refreshAlerts,
+            isNanoReady,
+            observeNanoStatus,
+        )
     }
 
     @Test
@@ -112,12 +128,36 @@ class AskViewModelTest {
     }
 
     @Test
+    fun `nano unavailable blocks navigation and shows the error`() = runTest {
+        val vm = viewModel()
+        coEvery { isNanoReady() } returns false
+        vm.onQueryChange("flood water rising")
+
+        vm.events.test {
+            vm.ask()
+            advanceUntilIdle()
+            expectNoEvents()
+        }
+
+        assertTrue(vm.state.value.nanoError)
+    }
+
+    @Test
     fun `a failing alert stream surfaces the error state`() = runTest {
         every { observeAlerts() } returns flow { throw IllegalStateException("boom") }
         every { observeConnectivity() } returns online
         every { observeLanguage() } returns language
+        every { observeNanoStatus() } returns nanoStatus
         coEvery { refreshAlerts() } returns Unit
-        val vm = AskViewModel(observeAlerts, observeConnectivity, observeLanguage, refreshAlerts)
+        coEvery { isNanoReady() } returns true
+        val vm = AskViewModel(
+            observeAlerts,
+            observeConnectivity,
+            observeLanguage,
+            refreshAlerts,
+            isNanoReady,
+            observeNanoStatus,
+        )
 
         vm.state.test {
             val failed = awaitUntil { it.hasError }

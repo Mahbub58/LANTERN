@@ -91,7 +91,22 @@ data class Answer(
     val isDeeper: Boolean = false,
     val retrievalScore: Float = 0f,
     val emergencyNumbers: List<EmergencyNumber> = emptyList(),
+    val onDeviceIssue: OnDeviceIssue? = null,
 )
+
+/**
+ * Why the on-device model did not produce this answer.
+ *
+ * The answer is still useful (cloud or vetted card text), but the UI must say
+ * that Gemini Nano was not involved instead of implying it was.
+ */
+enum class OnDeviceIssue {
+    /** Nano is not installed, not downloaded, still downloading, or unsupported. */
+    UNAVAILABLE,
+
+    /** Nano reported ready but matching or generation failed. */
+    FAILED,
+}
 
 data class RoutingConfig(
     val confidenceThreshold: Float = DEFAULT_THRESHOLD,

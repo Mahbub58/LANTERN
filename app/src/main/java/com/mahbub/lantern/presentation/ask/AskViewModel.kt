@@ -2,11 +2,14 @@ package com.mahbub.lantern.presentation.ask
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mahbub.lantern.domain.ai.NanoStatus
 import com.mahbub.lantern.domain.model.Alert
 import com.mahbub.lantern.domain.model.AppLanguage
+import com.mahbub.lantern.domain.usecase.IsNanoReadyUseCase
 import com.mahbub.lantern.domain.usecase.ObserveAlertsUseCase
 import com.mahbub.lantern.domain.usecase.ObserveConnectivityUseCase
 import com.mahbub.lantern.domain.usecase.ObserveLanguageUseCase
+import com.mahbub.lantern.domain.usecase.ObserveNanoStatusUseCase
 import com.mahbub.lantern.domain.usecase.RefreshAlertsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -28,7 +31,13 @@ data class AskUiState(
     val isLoading: Boolean = true,
     val hasError: Boolean = false,
     val blankError: Boolean = false,
-)
+    val nanoStatus: NanoStatus = NanoStatus.UNAVAILABLE,
+    val isCheckingNano: Boolean = false,
+    val nanoError: Boolean = false,
+) {
+    /** Nano is the only matcher, so the Ask action must not navigate without it. */
+    val canAsk: Boolean get() = nanoStatus == NanoStatus.READY
+}
 
 sealed interface AskEvent {
     data class OpenAnswer(val question: String) : AskEvent
@@ -42,6 +51,8 @@ class AskViewModel @Inject constructor(
     private val observeConnectivity: ObserveConnectivityUseCase,
     private val observeLanguage: ObserveLanguageUseCase,
     private val refreshAlerts: RefreshAlertsUseCase,
+    private val isNanoReady: IsNanoReadyUseCase,
+    private val observeNanoStatus: ObserveNanoStatusUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AskUiState())
@@ -54,6 +65,11 @@ class AskViewModel @Inject constructor(
 
     init {
         load()
+        viewModelScope.launch {
+            observeNanoStatus().collect { status ->
+                _state.update { it.copy(nanoStatus = status) }
+            }
+        }
     }
 
     fun load() {
@@ -99,12 +115,30 @@ class AskViewModel @Inject constructor(
             _state.update { it.copy(blankError = true) }
             return
         }
-        viewModelScope.launch { _events.send(AskEvent.OpenAnswer(question)) }
+        askQuestion(question)
     }
 
     fun onQuickChip(text: String) {
         _state.update { it.copy(query = text, blankError = false) }
-        viewModelScope.launch { _events.send(AskEvent.OpenAnswer(text)) }
+        askQuestion(text)
+    }
+
+    /**
+     * Gemini Nano performs all matching, so the answer page is only opened
+     * when Nano is ready. Otherwise the user stays here and sees an error.
+     */
+    private fun askQuestion(question: String) {
+        if (_state.value.isCheckingNano) return
+        viewModelScope.launch {
+            _state.update { it.copy(isCheckingNano = true, nanoError = false) }
+            val ready = runCatching { isNanoReady() }.getOrDefault(false)
+            _state.update { it.copy(isCheckingNano = false) }
+            if (!ready) {
+                _state.update { it.copy(nanoError = true) }
+                return@launch
+            }
+            _events.send(AskEvent.OpenAnswer(question))
+        }
     }
 
     fun openSettings() {

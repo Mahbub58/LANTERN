@@ -6,12 +6,10 @@ import com.mahbub.lantern.data.fake.FakeConnectivityRepository
 import com.mahbub.lantern.data.fake.FakeOnDeviceInference
 import com.mahbub.lantern.domain.ai.AiRouter
 import com.mahbub.lantern.domain.ai.GroundedAnswerValidator
-import com.mahbub.lantern.domain.ai.LexicalSafetyCardRetriever
 import com.mahbub.lantern.domain.ai.PiiScrubber
 import com.mahbub.lantern.domain.ai.SafetyGuard
 import com.mahbub.lantern.domain.model.AppLanguage
 import com.mahbub.lantern.domain.model.InferenceSource
-import com.mahbub.lantern.domain.model.RoutingConfig
 import com.mahbub.lantern.testutil.InMemorySafetyCardRepository
 import com.mahbub.lantern.testutil.earthquakeCard
 import com.mahbub.lantern.testutil.floodCard
@@ -33,7 +31,6 @@ class AskLanternUseCaseTest {
         configRepository = config,
         connectivityRepository = connectivity,
         aiRouter = AiRouter(
-            retriever = LexicalSafetyCardRetriever(),
             onDeviceInference = FakeOnDeviceInference(),
             cloudInference = FakeCloudInference(),
             piiScrubber = PiiScrubber(),
@@ -75,19 +72,6 @@ class AskLanternUseCaseTest {
 
         assertEquals(InferenceSource.ON_DEVICE, answer.source)
         assertTrue(answer.text.contains("Pani aap ke ghar"))
-    }
-
-    @Test
-    fun `offline with an unreachable threshold returns the vetted card text`() = runTest {
-        config.setRoutingConfig(RoutingConfig(confidenceThreshold = 0.99f))
-
-        val answer = useCase(
-            question = "flood",
-            language = AppLanguage.EN,
-        )
-
-        assertEquals(InferenceSource.CARD_TEXT, answer.source)
-        assertEquals("Water is entering your home", answer.text)
     }
 
     @Test

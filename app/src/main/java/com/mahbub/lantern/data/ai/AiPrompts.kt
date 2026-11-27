@@ -31,6 +31,30 @@ internal object AiPrompts {
         ${question.trim()}
     """.trimIndent()
 
+    /**
+     * Multilingual card matching. The question can be English, Urdu or Roman
+     * Urdu; the model must understand the meaning rather than match keywords.
+     * The catalog is small (six cards), so it fits comfortably in the on-device
+     * prompt budget.
+     */
+    fun onDeviceMatch(question: String, cards: List<SafetyCard>): String = buildString {
+        appendLine("You are Lantern, a disaster-safety helper.")
+        appendLine("Match the person's question to exactly ONE safety card.")
+        appendLine("The question can be in English, Urdu or Roman Urdu.")
+        appendLine("Understand the meaning, not only the words.")
+        appendLine("Choose only from these card ids:")
+        cards.forEach { card ->
+            val keywords = card.allKeywords().take(12).joinToString("; ")
+            appendLine(
+                "- ${card.id}: ${card.title.en} | ${card.title.ur} | ${card.title.roman} | $keywords",
+            )
+        }
+        appendLine("If no card is a safe match, use cardId \"none\".")
+        appendLine("Return the matching card id.")
+        appendLine("QUESTION:")
+        append(question.trim())
+    }
+
     fun cloud(question: String, card: SafetyCard, language: AppLanguage): String = """
         You are Lantern, a disaster-safety helper for people in Pakistan.
         Answer ONLY from the safety card below. If the card does not cover the

@@ -60,6 +60,9 @@
     <string name="ask_placeholder">Describe your emergency</string>
     <string name="ask_button">Ask Lantern</string>
     <string name="ask_blank_error">Write a few words about what is happening.</string>
+    <string name="ask_nano_unavailable">Gemini Nano is not available on this phone. Lantern needs it to match your question to a safety card.</string>
+    <string name="ask_nano_not_downloaded">Gemini Nano is not downloaded yet. Connect to Wi-Fi and wait for the download to finish.</string>
+    <string name="ask_nano_downloading">Gemini Nano is still downloading. Try again when it is ready.</string>
     <string name="ask_privacy_note">Do not include names, phone numbers or exact addresses.</string>
     <string name="quick_flood_rising">Flood water rising</string>
     <string name="quick_earthquake_now">Earthquake now</string>
@@ -102,6 +105,9 @@
     <string name="answer_safety_note">Lantern does not diagnose illness or give medicine doses.</string>
     <string name="answer_retry">Try again</string>
     <string name="answer_cloud_disabled">Cloud fallback is turned off in the demo panel.</string>
+    <string name="answer_nano_title">On-device AI</string>
+    <string name="answer_nano_unavailable">Gemini Nano is not available on this phone. Lantern used the vetted safety cards and local emergency numbers.</string>
+    <string name="answer_nano_failed">Gemini Nano could not load an answer. Lantern used the vetted safety cards or the cloud.</string>
 
     <!-- Report -->
     <string name="report_title">Report damage</string>

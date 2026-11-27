@@ -81,6 +81,45 @@ class FirebaseOnDeviceInference @Inject constructor() : OnDeviceInference {
         return current == NanoStatus.READY
     }
 
+    /**
+     * Asks Nano to match the question to one card. This is what makes matching
+     * work across English, Urdu and Roman Urdu even when the exact keywords in
+     * the card JSON are not present.
+     *
+     * Returns `null` only when Nano ran and chose no card. Any load or
+     * inference problem throws, so the router can surface an error to the user.
+     */
+    override suspend fun matchCard(question: String, cards: List<SafetyCard>): String? {
+        if (cards.isEmpty()) return null
+        if (checkStatus() != NanoStatus.READY) {
+            throw OnDeviceInferenceException("Gemini Nano is not available on this device")
+        }
+
+        val prompt = AiPrompts.onDeviceMatch(question, cards)
+        return try {
+            val response = withTimeout(MATCH_TIMEOUT_MS) {
+                model.generateObject(GeneratedMatch.firebaseAISchema(), prompt)
+            }
+            val source = response.response.inferenceSource
+            Log.i(TAG, "match inferenceSource=$source")
+            if (source != InferenceSource.ON_DEVICE) {
+                throw OnDeviceInferenceException("ONLY_ON_DEVICE match returned $source")
+            }
+
+            val rawId = response.getObject()?.cardId?.trim().orEmpty()
+            val matched = rawId
+                .takeIf { it.isNotEmpty() && !it.equals("none", ignoreCase = true) }
+                ?.takeIf { candidate -> cards.any { it.id == candidate } }
+            Log.i(TAG, "on-device match cardId=${matched ?: "none"}")
+            matched
+        } catch (t: TimeoutCancellationException) {
+            throw OnDeviceInferenceException("On-device match timed out", t)
+        } catch (t: Throwable) {
+            if (t is OnDeviceInferenceException) throw t
+            throw OnDeviceInferenceException("On-device match failed", t)
+        }
+    }
+
     override suspend fun answer(
         question: String,
         card: SafetyCard,
@@ -201,6 +240,7 @@ class FirebaseOnDeviceInference @Inject constructor() : OnDeviceInference {
         const val TAG = "LanternOnDevice"
         const val MAX_ATTEMPTS = 2
         const val ON_DEVICE_TIMEOUT_MS = 20_000L
+        const val MATCH_TIMEOUT_MS = 10_000L
     }
 }
 

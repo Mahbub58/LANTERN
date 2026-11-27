@@ -16,10 +16,13 @@ on the phone or Gemini in the cloud, and damage reports queue locally and sync t
 
 ## What works in Phase 2
 
-- **Firebase AI Logic, hybrid.** Gemini Nano 4 is requested on-device with
-  `InferenceMode.ONLY_ON_DEVICE` and `OnDeviceModelOption.PREVIEW`. The router decides when
-  to escalate to a cloud model with `InferenceMode.ONLY_IN_CLOUD` (`gemini-3.8-flash`).
-  The response's `inferenceSource` is logged, and the UI badge is driven by the router's
+- **Firebase AI Logic, hybrid, Nano-first.** Gemini Nano 4 is requested on-device with
+  `InferenceMode.ONLY_ON_DEVICE` and `OnDeviceModelOption.PREVIEW`. **Nano performs all
+  question-to-card matching** in English, Urdu and Roman Urdu. The Ask screen will not open
+  the answer page unless Nano is ready; it shows an error instead. A cloud model
+  (`gemini-3.8-flash`, `ONLY_IN_CLOUD`) is used only for the explicit "deeper answer" or
+  when Nano matched a card but failed to generate the answer. The response's
+  `inferenceSource` is logged, and the UI badge is driven by the router's
   `InferenceSource`.
 - **Anonymous Firebase Auth.** A uid is created on first launch; reports are scoped to it.
 - **Firestore, local-first.** Unlimited offline persistence. Every report is written to a
@@ -38,10 +41,11 @@ on the phone or Gemini in the cloud, and damage reports queue locally and sync t
   are kept in a local queue until anonymous sign-in is possible, then written to Firestore.
 - **Privacy.** `PiiScrubber` runs before every cloud prompt. Coordinates never go to a
   model. Drafts never leave the phone; a report leaves only when the person presses Send.
-- **Tests.** 129 unit tests, 22 emulator-based Firestore rules tests, an always-on Firebase
+- **Tests.** 135 unit tests, 22 emulator-based Firestore rules tests, an always-on Firebase
   wiring test, and an opt-in airplane-mode offline flow test.
 - **Real accuracy numbers.** 40 questions (20 Roman Urdu, 10 Urdu, 10 English) and 20
-  reports are measured by `AccuracyReportTest`; the numbers are published below.
+  reports are measured by `AccuracyReportTest` as a lexical baseline; runtime matching is
+  Gemini Nano.
 
 The UI, domain and presentation layers are unchanged from Phase 1. Only `data/`, `di/`, the
 Application wiring, build files and the new Firebase rules/config files changed.
@@ -81,17 +85,23 @@ domain.
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### Routing policy (`AiRouter`, pure Kotlin, unchanged)
+### Routing policy (`AiRouter`, pure Kotlin)
 
-1. **No match** — retrieval score below `MINIMUM_MATCH_SCORE` (0.18): NoMatch answer with
-   local emergency numbers. No model is called.
-2. **On-device** — score ≥ `confidenceThreshold` (default 0.55) and Nano is ready: ask the
-   on-device model for strict JSON, then validate card id, safety and grounding.
-3. **Cloud fallback** — score below threshold, or the on-device answer is missing/invalid,
-   and the device is online with cloud fallback enabled: scrub PII, then ask the cloud.
-4. **Card text** — offline, cloud disabled, or cloud answer rejected: return the vetted
-   card text unchanged.
-5. Every outcome returns `Answer(card, text, InferenceSource)`.
+**Gemini Nano is the only matcher.** There is no keyword or lexical fallback at runtime.
+The Ask screen checks Nano before navigating; if Nano is not ready the user stays on Ask
+and sees an error.
+
+1. **Nano unavailable** — no navigation. If the router is reached anyway it returns
+   `NoMatch` + `OnDeviceIssue.UNAVAILABLE`; no cloud call is made.
+2. **Nano match** — Nano reads the question in English, Urdu or Roman Urdu and returns the
+   best card id through structured `{cardId}` output. No card -> `NoMatch` with local
+   emergency numbers.
+3. **On-device answer** — the matched card is answered by Nano in strict JSON, then
+   validated for card id, safety and grounding.
+4. **Generation fallback** — if Nano matched but generation failed, use cloud when online
+   and enabled, otherwise the matched card text. The answer carries
+   `OnDeviceIssue.FAILED` and the answer screen says Nano did not produce it.
+5. Every outcome returns `Answer(card, text, InferenceSource, onDeviceIssue)`.
 
 ---
 
@@ -176,7 +186,7 @@ The hybrid API is experimental, so the AI files opt in with
 
 | Product | What it does in Lantern |
 | --- | --- |
-| **AI Logic** | On-device Gemini Nano 4 (`ONLY_ON_DEVICE`) and cloud Gemini (`ONLY_IN_CLOUD`); `inferenceSource` is logged |
+| **AI Logic** | Gemini Nano 4 is the only matcher and the default generator (`ONLY_ON_DEVICE`); cloud Gemini (`ONLY_IN_CLOUD`) is for deeper answers or generation fallback; `inferenceSource` is logged |
 | **Authentication** | Anonymous sign-in; `uid` scopes every report |
 | **Firestore** | `reports`, realtime `alerts` + `warnings` feeds; unlimited offline cache; `hasPendingWrites` drives the sync badge |
 | **Remote Config** | Live threshold, cloud fallback, alert level, emergency numbers and the full `safety_cards` JSON pack |
@@ -199,7 +209,7 @@ app/src/main/assets/safety_cards.json     6 cards (3 flood, 3 earthquake)
 app/src/main/assets/test/questions.csv    40 retrieval questions
 app/src/main/assets/test/reports.csv      20 report-field cases
 app/src/main/res/values*/strings.xml      EN, UR, Roman Urdu
-app/src/test/                             124 JVM tests
+app/src/test/                             135 JVM tests
 app/src/androidTest/                      Firebase wiring + opt-in offline flow
 firestore.rules                           security rules
 firestore.indexes.json                    no composite indexes required
@@ -439,7 +449,7 @@ denied to the app; only the console/Admin SDK can publish.
 ## Tests
 
 ```bash
-# 124 JVM tests: routing, safety, PII, use cases, ViewModels, new data helpers
+# 135 JVM tests: Nano-only routing, safety, PII, use cases, ViewModels, data helpers
 ./gradlew :app:testDebugUnitTest
 
 # 22 Firestore emulator rules tests (Node)
@@ -456,7 +466,10 @@ Anonymous Auth enabled, rules deployed) and a device/emulator where airplane mod
 toggled. It asks offline, submits a report offline, reconnects, waits for SENT, and reads the
 document back from Firestore with `Source.SERVER`.
 
-### Accuracy report (real numbers)
+### Accuracy report (lexical baseline, not the runtime matcher)
+
+Runtime matching is Gemini Nano only. This benchmark measures the deterministic lexical
+scorer kept in the test sources so the two approaches can be compared honestly.
 
 Run:
 
@@ -500,7 +513,7 @@ These are domain-level limitations to fix in Phase 3; they are not hidden by the
 | Report stays **Queued**, no `reports` doc | `LanternReports: submit ... uid=false` or `LanternAuth: ... CONFIGURATION_NOT_FOUND` | Anonymous Auth is disabled | Authentication → Sign-in method → **Anonymous → Enable** |
 | Firestore/AI calls rejected | `FirebaseAppCheck: Debug token was rejected by server` | Debug token not registered | `./scripts/firebase_setup.sh`, or register the token from logcat |
 | Cloud answer falls back to card text | `LanternCloud: ... The Gemini API free tier is not available for this project` | The project has no Gemini API free tier | Enable billing at <https://aistudio.google.com/billing>, or use a project with a free tier |
-| On-device answer falls back to card text | `LanternOnDevice: OnDeviceModelStatus=UNAVAILABLE` | Emulator/unsupported device, or Nano not downloaded/enrolled | Use a supported physical device and enroll in the AICore Developer Preview |
+| Ask stays on the Ask screen with a Gemini Nano notice | `LanternOnDevice: OnDeviceModelStatus=UNAVAILABLE` | Emulator/unsupported device, or Nano not downloaded/enrolled. Matching is Nano-only, so the app deliberately blocks navigation | Use a supported physical device and enroll in the AICore Developer Preview |
 | Firestore `PERMISSION_DENIED` | `Report write rejected` | Rules not deployed or App Check token rejected | Deploy `firestore.rules` and register the token |
 
 The on-device SDK is wired correctly. On a supported device the log shows
@@ -521,8 +534,9 @@ adb logcat -s LanternOnDevice LanternCloud LanternReports LanternAuth LanternApp
 - [x] **AI Logic called at runtime.** `FirebaseOnDeviceInference` and
   `FirebaseCloudInference` call `generateObject`/`generateContent` on a `GenerativeModel`;
   the on-device pass is `ONLY_ON_DEVICE` with `OnDeviceModelOption.PREVIEW` (Nano 4).
-- [x] **Hybrid routing stays in the app.** The router owns escalation; on-device exceptions
-  become cloud calls only when online and `cloud_fallback_enabled`.
+- [x] **Nano-only matching, explicit error.** Gemini Nano matches every question in English,
+  Urdu or Roman Urdu. If Nano is not ready the Ask screen blocks navigation and explains
+  why; there is no keyword fallback. Cloud is only a generation fallback or a deeper answer.
 - [x] **App Check.** Debug provider in debug, Play Integrity in release, installed before AI
   Logic/Firestore. Enforcement is a console step (below).
 - [x] **Anonymous auth.** `FirebaseAuthRepository` signs in anonymously and stores the uid

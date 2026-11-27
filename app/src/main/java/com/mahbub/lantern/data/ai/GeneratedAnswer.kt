@@ -21,3 +21,17 @@ data class GeneratedAnswer(
 ) {
     companion object
 }
+
+/**
+ * Structured-output schema for multilingual card matching. The question may be
+ * English, Urdu or Roman Urdu; Nano returns the exact id of the best card, or
+ * "none" when no card is a safe match.
+ */
+@Serializable
+@Generable(description = "The safety card that best matches the person's question")
+data class GeneratedMatch(
+    @Guide(description = "The exact id of the best matching safety card, or none")
+    val cardId: String,
+) {
+    companion object
+}
