@@ -3,6 +3,7 @@ package com.mahbub.lantern.data.fake
 import com.mahbub.lantern.domain.ai.NanoStatus
 import com.mahbub.lantern.domain.ai.OnDeviceInference
 import com.mahbub.lantern.domain.ai.TextNormalizer
+import com.mahbub.lantern.domain.ai.TriageResult
 import com.mahbub.lantern.domain.model.AppLanguage
 import com.mahbub.lantern.domain.model.SafetyCard
 import javax.inject.Inject
@@ -11,67 +12,51 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-
-@Serializable
-private data class DeviceAnswerPayload(
-    val cardId: String,
-    val answer: String,
-)
 
 /**
- * Stand-in for Gemini Nano. It waits 800 ms, then writes a short answer using
- * only the retrieved card, in the requested language, in the strict JSON shape
- * the router validates.
+ * Stand-in for Gemini Nano. It waits 800 ms, then matches the question with a
+ * small token-overlap heuristic and answers from the chosen card in the
+ * requested language. The real adapter gives Nano the same prompt and card JSON
+ * as the cloud model and uses the same [TriageResult] shape.
  */
 @Singleton
 class FakeOnDeviceInference @Inject constructor() : OnDeviceInference {
 
-    private val json = Json
     private val statusFlow = MutableStateFlow(NanoStatus.READY)
 
     override val status: Flow<NanoStatus> = statusFlow.asStateFlow()
 
     override suspend fun isAvailable(): Boolean = statusFlow.value == NanoStatus.READY
 
-    /**
-     * Simulates Nano's multilingual understanding with a small token-overlap
-     * heuristic. The real adapter sends the question and the card catalog to
-     * Gemini Nano; the fake only exists for tests and previews.
-     */
-    override suspend fun matchCard(question: String, cards: List<SafetyCard>): String? {
-        delay(150)
+    override suspend fun matchAndAnswer(
+        question: String,
+        cards: List<SafetyCard>,
+        language: AppLanguage,
+    ): TriageResult {
+        delay(800)
         val questionTokens = TextNormalizer.significantTokens(question).toSet()
-        if (questionTokens.isEmpty()) return null
+        if (questionTokens.isEmpty()) return TriageResult.NoMatch
 
-        return cards
-            .map { card ->
+        val card = cards
+            .map { candidate ->
                 val cardTokens = TextNormalizer.significantTokens(
                     buildString {
-                        append(card.title.en).append(' ')
-                        append(card.title.ur).append(' ')
-                        append(card.title.roman).append(' ')
-                        append(card.allKeywords().joinToString(" "))
+                        append(candidate.title.en).append(' ')
+                        append(candidate.title.ur).append(' ')
+                        append(candidate.title.roman).append(' ')
+                        append(candidate.allKeywords().joinToString(" "))
                     },
                 ).toSet()
-                card to cardTokens.count { it in questionTokens }
+                candidate to cardTokens.count { it in questionTokens }
             }
             .filter { (_, overlap) -> overlap > 0 }
             .maxByOrNull { (_, overlap) -> overlap }
             ?.first
-            ?.id
-    }
+            ?: return TriageResult.NoMatch
 
-    override suspend fun answer(
-        question: String,
-        card: SafetyCard,
-        language: AppLanguage,
-    ): String {
-        delay(800)
         val title = card.title.forLanguage(language)
         val steps = card.steps.forLanguage(language).take(2).joinToString(" ")
         val answer = listOf(title, steps).filter { it.isNotBlank() }.joinToString(" ")
-        return json.encodeToString(DeviceAnswerPayload(cardId = card.id, answer = answer))
+        return TriageResult(matched = true, cardId = card.id, answer = answer)
     }
 }

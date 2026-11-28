@@ -21,6 +21,7 @@ class RemoteConfigDefaultsTest {
         assertEquals(true, values[RemoteConfigDefaults.CLOUD_FALLBACK_ENABLED])
         assertEquals(AlertLevel.WARNING.name, values[RemoteConfigDefaults.ALERT_LEVEL])
         assertEquals("", values[RemoteConfigDefaults.SAFETY_CARDS_JSON])
+        assertEquals("", values[RemoteConfigDefaults.EMERGENCY_NUMBERS])
         assertTrue(values[RemoteConfigDefaults.EMERGENCY_NUMBERS_JSON] is String)
     }
 
@@ -35,5 +36,28 @@ class RemoteConfigDefaultsTest {
         assertEquals("Rescue 1122", numbers.first().label)
         assertEquals("1122", numbers.first().number)
         assertTrue(numbers.all { it.label.isNotBlank() && it.number.isNotBlank() })
+    }
+
+    @Test
+    fun `current console emergency shape parses name region and organization`() {
+        val raw = """
+            [
+              {"number":"1122","name":"Emergency Number","region":"Punjab"},
+              {"number":"1700","name":"Disaster helpline","organization":"Khyber Pakhtunkhwa PDMA"}
+            ]
+        """.trimIndent()
+
+        val numbers = Json { ignoreUnknownKeys = true }.decodeFromString(
+            ListSerializer(EmergencyNumberDto.serializer()),
+            raw,
+        ).map(EmergencyNumberDto::toDomain)
+
+        assertEquals(2, numbers.size)
+        assertEquals("Emergency Number", numbers[0].label)
+        assertEquals("1122", numbers[0].number)
+        assertEquals("Punjab", numbers[0].description)
+        assertEquals("Disaster helpline", numbers[1].label)
+        assertEquals("1700", numbers[1].number)
+        assertEquals("Khyber Pakhtunkhwa PDMA", numbers[1].description)
     }
 }

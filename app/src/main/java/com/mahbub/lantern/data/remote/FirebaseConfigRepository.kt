@@ -153,12 +153,25 @@ class FirebaseConfigRepository @Inject constructor(
             AlertLevel.valueOf(remoteConfig.getString(RemoteConfigDefaults.ALERT_LEVEL))
         }.getOrDefault(AlertLevel.WARNING)
 
+        // Prefer the live `emergency_numbers` key added in the console. Fall
+        // back to the legacy `emergency_numbers_json`, then the bundled list.
+        val emergencyRaw = remoteConfig.getString(RemoteConfigDefaults.EMERGENCY_NUMBERS)
+            .ifBlank {
+                remoteConfig.getString(RemoteConfigDefaults.EMERGENCY_NUMBERS_JSON)
+            }
         val numbers = runCatching {
             json.decodeFromString(
                 ListSerializer(EmergencyNumberDto.serializer()),
-                remoteConfig.getString(RemoteConfigDefaults.EMERGENCY_NUMBERS_JSON),
-            ).map(EmergencyNumberDto::toDomain).ifEmpty { RemoteConfigDefaults.emergencyNumbers }
+                emergencyRaw,
+            ).map(EmergencyNumberDto::toDomain)
+                .filter { it.number.isNotBlank() }
+                .ifEmpty { RemoteConfigDefaults.emergencyNumbers }
         }.getOrDefault(RemoteConfigDefaults.emergencyNumbers)
+        Log.i(
+            TAG,
+            "Emergency numbers loaded (${numbers.size}): " +
+                numbers.joinToString { "${it.label}=${it.number}" },
+        )
 
         remote.value = RemoteSnapshot(
             routing = RoutingConfig(

@@ -61,9 +61,6 @@
     <string name="ask_placeholder">Apni emergency bayan karein</string>
     <string name="ask_button">Lantern se poochhein</string>
     <string name="ask_blank_error">Likhein ke kya ho raha hai.</string>
-    <string name="ask_nano_unavailable">Gemini Nano is phone par dastyab nahi. Lantern ko aap ke sawal ko safety card se milane ke liye isi ki zaroorat hai.</string>
-    <string name="ask_nano_not_downloaded">Gemini Nano abhi download nahi hua. Wi-Fi se juriye aur download mukammal hone ka intezar karein.</string>
-    <string name="ask_nano_downloading">Gemini Nano abhi download ho raha hai. Tayyar hone par dobara koshish karein.</string>
     <string name="ask_privacy_note">Naam, phone number ya mukammal pata shamil na karein.</string>
     <string name="quick_flood_rising">Flood ka pani barh raha</string>
     <string name="quick_earthquake_now">Abhi zalzala</string>
@@ -81,8 +78,8 @@
 
     <string name="answer_title">Jawab</string>
     <string name="answer_loading">Jawab tayyar kiya ja raha hai…</string>
-    <string name="answer_no_match_title">Koi verified card nahi mila</string>
-    <string name="answer_no_match_body">Is sawal ke liye humein koi safety card nahi mila. Agar aap khatre mein hain to abhi emergency number par call karein.</string>
+    <string name="answer_no_match_title">Hum aap ka sawal samajh nahi sake</string>
+    <string name="answer_no_match_body">Meharbani karke dobara doosre alfaaz mein poochein, ya list se koi topic chunein.\n\nAgar aap khatre mein hain to apne muqami emergency number par call karein.</string>
     <string name="answer_emergency_numbers">Emergency numbers</string>
     <string name="answer_call">Call</string>
     <string name="answer_steps">Abhi yeh karein</string>
@@ -105,9 +102,6 @@
     <string name="answer_safety_note">Lantern bimari ki diagnosis ya dawai ki khurak nahi batata.</string>
     <string name="answer_retry">Dobara koshish karein</string>
     <string name="answer_cloud_disabled">Demo panel mein cloud fallback band hai.</string>
-    <string name="answer_nano_title">On-device AI</string>
-    <string name="answer_nano_unavailable">Gemini Nano is phone par dastyab nahi. Lantern ne tasdeeq-shuda safety cards aur local emergency numbers istemal kiye hain.</string>
-    <string name="answer_nano_failed">Gemini Nano jawab nahi de saka. Lantern ne tasdeeq-shuda safety cards ya cloud istemal kiya hai.</string>
 
     <string name="report_title">Nuqsan ki report</string>
     <string name="report_step">Step %1$d of 3</string>

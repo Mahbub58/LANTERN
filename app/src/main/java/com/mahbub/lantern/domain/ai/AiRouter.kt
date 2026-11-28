@@ -11,27 +11,24 @@ import javax.inject.Inject
 /**
  * The routing policy. Pure Kotlin and fully unit tested.
  *
- * **Matching is Gemini Nano only.** There is no keyword or lexical fallback:
- * Nano reads the question in English, Urdu or Roman Urdu and returns the id of
- * the best safety card. If Nano is not ready the router returns a NoMatch with
- * [OnDeviceIssue.UNAVAILABLE]; the Ask screen checks Nano before navigating, so
- * the user never reaches this state through the UI.
+ * **Both engines use the same triage logic.** Gemini Nano and the cloud model
+ * receive the same system instruction, the same approved card pack and the
+ * person's question, and both return `{matched, cardId, answer}`. The router
+ * only decides which engine runs and how to present a failure.
  *
- * 1. Nano unavailable -> NoMatch + UNAVAILABLE. No generation, no cloud.
- * 2. Nano match fails -> NoMatch + FAILED.
- * 3. Nano finds no card -> NoMatch with no error (the question is genuinely
- *    outside the card pack; the UI shows emergency numbers).
- * 4. Card matched -> grounded on-device answer, strictly from the card JSON.
- * 5. On-device generation fails -> cloud when online and enabled (PII scrubbed),
- *    otherwise the matched card's vetted text. The answer carries
- *    [OnDeviceIssue.FAILED] so the UI can say Nano did not produce it.
- * 6. Every result carries the card and an [InferenceSource] for the UI badge.
+ * 1. Gemini Nano first (unless the person explicitly asks for a deeper cloud
+ *    answer): one call matches the question and writes the grounded answer.
+ * 2. If Nano is unavailable, throws, or returns `matched:false`, the same
+ *    PII-scrubbed question goes to cloud AI Logic when online and enabled.
+ * 3. A cloud `matched:false` becomes a NoMatch; the answer page shows the
+ *    localized "we did not match your question" message.
+ * 4. A match from either engine renders the existing safety-card result page.
+ * 5. Every result carries the card and an [InferenceSource] for the UI badge.
  */
 class AiRouter @Inject constructor(
     private val onDeviceInference: OnDeviceInference,
     private val cloudInference: CloudInference,
     private val piiScrubber: PiiScrubber,
-    private val answerValidator: GroundedAnswerValidator,
     private val safetyGuard: SafetyGuard,
 ) {
 
@@ -45,65 +42,146 @@ class AiRouter @Inject constructor(
     ): Answer {
         val safeConfig = config.sanitized()
         if (question.isBlank()) return noMatch(0f)
-
-        // Matching is done by Gemini Nano and nothing else.
-        val onDeviceReady = runCatching { onDeviceInference.isAvailable() }.getOrDefault(false)
-        if (!onDeviceReady) {
-            return noMatch(0f, OnDeviceIssue.UNAVAILABLE)
+        if (cards.isEmpty()) {
+            throw IllegalStateException("No safety cards are loaded; cannot triage the question")
         }
 
-        val matchedId = runCatching { onDeviceInference.matchCard(question, cards) }
-            .getOrElse { return noMatch(0f, OnDeviceIssue.FAILED) }
-        val card = matchedId?.let { id -> cards.firstOrNull { it.id == id } }
-            ?: return noMatch(0f)
+        val canUseCloud = isOnline && safeConfig.cloudFallbackEnabled
+        val onDeviceReady = runCatching { onDeviceInference.isAvailable() }.getOrDefault(false)
+        var onDeviceIssue: OnDeviceIssue? = when {
+            forceCloud -> null
+            onDeviceReady -> null
+            else -> OnDeviceIssue.UNAVAILABLE
+        }
 
-        if (!forceCloud) {
-            val raw = runCatching { onDeviceInference.answer(question, card, language) }.getOrNull()
-            val validated = raw?.let { answerValidator.validate(it, card, language) }
-            if (!validated.isNullOrBlank()) {
+        // 1. On-device triage: same prompt, card JSON and result schema as cloud.
+        if (!forceCloud && onDeviceReady) {
+            val result = runCatching {
+                onDeviceInference.matchAndAnswer(question, cards, language)
+            }.getOrElse {
+                onDeviceIssue = OnDeviceIssue.FAILED
+                null
+            }
+
+            if (result != null) {
+                // Trust a resolvable card id even if the model set matched=false
+                // by mistake; the id is the stronger signal.
+                val card = resolveCard(result.cardId, cards)
+                if (card != null) {
+                    return Answer(
+                        card = card,
+                        text = answerText(result.answer, card, language),
+                        source = InferenceSource.ON_DEVICE,
+                    )
+                }
+                if (result.matched) {
+                    // A matched result with an unknown id is a model error.
+                    onDeviceIssue = OnDeviceIssue.FAILED
+                }
+                // result.matched == false is a valid answer: try the cloud next.
+            }
+        }
+
+        // 2. Cloud fallback, using exactly the same triage contract.
+        var cloudFailure: Throwable? = null
+        if (canUseCloud) {
+            val scrubbed = piiScrubber.scrub(question)
+            val result = try {
+                cloudInference.matchAndAnswer(scrubbed, cards, language)
+            } catch (t: Throwable) {
+                cloudFailure = t
+                null
+            }
+
+            if (result != null) {
+                val card = resolveCard(result.cardId, cards)
+                if (card != null) {
+                    return Answer(
+                        card = card,
+                        text = answerText(result.answer, card, language),
+                        source = InferenceSource.CLOUD,
+                        isDeeper = forceCloud,
+                        onDeviceIssue = onDeviceIssue,
+                    )
+                }
+                if (result.matched) {
+                    onDeviceIssue = OnDeviceIssue.FAILED
+                }
+                // The cloud ran and explicitly said no card matched. Show only
+                // the localized ask-again message, not a Nano banner.
+                return noMatch(0f)
+            }
+        }
+
+        // 3. A deeper cloud answer was requested but the cloud failed. Nano is
+        // still a safe last resort so the person does not lose the answer.
+        if (forceCloud && onDeviceReady) {
+            val result = runCatching {
+                onDeviceInference.matchAndAnswer(question, cards, language)
+            }.getOrNull()
+            val card = result?.let { resolveCard(it.cardId, cards) }
+            if (card != null) {
                 return Answer(
                     card = card,
-                    text = validated,
+                    text = answerText(result.answer, card, language),
                     source = InferenceSource.ON_DEVICE,
                 )
             }
         }
 
-        // Generation failed after a successful match, or a deeper cloud answer
-        // was requested. A deliberate deeper request is not a Nano error.
-        val issue = if (forceCloud) null else OnDeviceIssue.FAILED
-
-        if (isOnline && safeConfig.cloudFallbackEnabled) {
-            val scrubbed = piiScrubber.scrub(question)
-            val cloudAnswer = runCatching {
-                cloudInference.answer(scrubbed, card, language)
-            }.getOrNull()
-            if (isCloudAnswerAcceptable(cloudAnswer)) {
-                return Answer(
-                    card = card,
-                    text = cloudAnswer!!.trim(),
-                    source = InferenceSource.CLOUD,
-                    isDeeper = forceCloud,
-                    onDeviceIssue = issue,
-                )
-            }
+        // A model request failed; do not disguise that as "your question did
+        // not match". The answer screen shows the retry state instead.
+        if (cloudFailure != null) {
+            throw IllegalStateException("AI triage failed on every engine", cloudFailure)
         }
 
-        return Answer(
-            card = card,
-            text = card.title.forLanguage(language),
-            source = InferenceSource.CARD_TEXT,
-            onDeviceIssue = issue,
-        )
+        return noMatch(0f, onDeviceIssue)
     }
 
-    private fun isCloudAnswerAcceptable(answer: String?): Boolean {
-        if (answer.isNullOrBlank()) return false
-        val trimmed = answer.trim()
-        if (trimmed.length > MAX_CLOUD_ANSWER_LENGTH) return false
-        if (safetyGuard.isUnsafe(trimmed)) return false
-        if (UNTRUSTED_LINK.containsMatchIn(trimmed)) return false
-        return true
+    /**
+     * Models occasionally return a card title instead of the id, or set
+     * `matched:false` while still naming a real card. Normalising hyphens,
+     * underscores and case keeps that from becoming a false "no match".
+     */
+    private fun resolveCard(rawId: String?, cards: List<SafetyCard>): SafetyCard? {
+        val value = rawId?.trim().orEmpty()
+        if (value.isEmpty() || value.equals("none", ignoreCase = true)) return null
+
+        cards.firstOrNull { it.id.equals(value, ignoreCase = true) }?.let { return it }
+
+        val normalized = normalizeCardKey(value)
+        if (normalized.isEmpty()) return null
+        return cards.firstOrNull { card ->
+            normalizeCardKey(card.id) == normalized ||
+                normalizeCardKey(card.title.en) == normalized ||
+                normalizeCardKey(card.title.ur) == normalized ||
+                normalizeCardKey(card.title.roman) == normalized
+        }
+    }
+
+    private fun normalizeCardKey(value: String): String = value
+        .lowercase()
+        .replace('-', ' ')
+        .replace('_', ' ')
+        .replace(Regex("\\s+"), " ")
+        .trim()
+
+    /**
+     * A short, safe answer for [Answer.text]. The result page itself is driven
+     * by the matched card, so a rejected or blank model answer falls back to the
+     * vetted card title.
+     */
+    private fun answerText(
+        raw: String,
+        card: SafetyCard,
+        language: AppLanguage,
+    ): String {
+        val trimmed = raw.trim()
+        if (trimmed.isBlank()) return card.title.forLanguage(language)
+        if (trimmed.length > MAX_ANSWER_LENGTH) return card.title.forLanguage(language)
+        if (safetyGuard.isUnsafe(trimmed)) return card.title.forLanguage(language)
+        if (UNTRUSTED_LINK.containsMatchIn(trimmed)) return card.title.forLanguage(language)
+        return trimmed
     }
 
     private fun noMatch(score: Float, issue: OnDeviceIssue? = null) = Answer(
@@ -116,7 +194,7 @@ class AiRouter @Inject constructor(
     )
 
     private companion object {
-        const val MAX_CLOUD_ANSWER_LENGTH = 1200
+        const val MAX_ANSWER_LENGTH = 1200
         val UNTRUSTED_LINK = Regex("https?://|www\\.", RegexOption.IGNORE_CASE)
     }
 }

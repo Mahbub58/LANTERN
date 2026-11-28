@@ -87,16 +87,6 @@ class ObserveNanoStatusUseCase @Inject constructor(
     operator fun invoke(): Flow<NanoStatus> = onDeviceInference.status
 }
 
-/**
- * Matching is Gemini Nano only, so the Ask screen must confirm Nano is ready
- * before opening the answer page.
- */
-class IsNanoReadyUseCase @Inject constructor(
-    private val onDeviceInference: OnDeviceInference,
-) {
-    suspend operator fun invoke(): Boolean = onDeviceInference.isAvailable()
-}
-
 class SetSimulatedOnlineUseCase @Inject constructor(
     private val networkSimulator: NetworkSimulator,
 ) {

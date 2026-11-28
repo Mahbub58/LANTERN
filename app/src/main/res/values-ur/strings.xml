@@ -61,9 +61,6 @@
     <string name="ask_placeholder">اپنی ایمرجنسی بیان کریں</string>
     <string name="ask_button">Lantern سے پوچھیں</string>
     <string name="ask_blank_error">لکھیں کہ کیا ہو رہا ہے۔</string>
-    <string name="ask_nano_unavailable">Gemini Nano اس فون پر دستیاب نہیں۔ لالٹین کو آپ کے سوال کو سیفٹی کارڈ سے ملانے کے لیے اسی کی ضرورت ہے۔</string>
-    <string name="ask_nano_not_downloaded">Gemini Nano ابھی ڈاؤن لوڈ نہیں ہوا۔ وائی فائی سے جڑیں اور ڈاؤن لوڈ مکمل ہونے کا انتظار کریں۔</string>
-    <string name="ask_nano_downloading">Gemini Nano ابھی ڈاؤن لوڈ ہو رہا ہے۔ تیار ہونے پر دوبارہ کوشش کریں۔</string>
     <string name="ask_privacy_note">نام، فون نمبر یا مکمل پتہ شامل نہ کریں۔</string>
     <string name="quick_flood_rising">سیلاب کا پانی بڑھ رہا ہے</string>
     <string name="quick_earthquake_now">ابھی زلزلہ</string>
@@ -81,8 +78,8 @@
 
     <string name="answer_title">جواب</string>
     <string name="answer_loading">جواب تیار کیا جا رہا ہے…</string>
-    <string name="answer_no_match_title">کوئی تصدیق شدہ کارڈ نہیں ملا</string>
-    <string name="answer_no_match_body">اس سوال کے لیے ہمیں کوئی حفاظتی کارڈ نہیں ملا۔ اگر آپ خطرے میں ہیں تو ابھی ایمرجنسی نمبر پر کال کریں۔</string>
+    <string name="answer_no_match_title">ہم آپ کا سوال سمجھ نہیں سکے</string>
+    <string name="answer_no_match_body">براہِ کرم دوبارہ دوسرے الفاظ میں پوچھیں، یا فہرست سے کوئی موضوع منتخب کریں۔\n\nاگر آپ خطرے میں ہیں تو اپنے مقامی ایمرجنسی نمبر پر کال کریں۔</string>
     <string name="answer_emergency_numbers">ایمرجنسی نمبر</string>
     <string name="answer_call">کال</string>
     <string name="answer_steps">ابھی یہ کریں</string>
@@ -105,9 +102,6 @@
     <string name="answer_safety_note">Lantern بیماری کی تشخیص یا دوائی کی خوراک نہیں بتاتا۔</string>
     <string name="answer_retry">دوبارہ کوشش کریں</string>
     <string name="answer_cloud_disabled">ڈیمو پینل میں کلاؤڈ فال بیک بند ہے۔</string>
-    <string name="answer_nano_title">آن ڈیوائس AI</string>
-    <string name="answer_nano_unavailable">Gemini Nano اس فون پر دستیاب نہیں۔ لالٹین نے تصدیق شدہ سیفٹی کارڈز اور مقامی ایمرجنسی نمبر استعمال کیے ہیں۔</string>
-    <string name="answer_nano_failed">Gemini Nano جواب نہیں دے سکا۔ لالٹین نے تصدیق شدہ سیفٹی کارڈز یا کلاؤڈ استعمال کیا ہے۔</string>
 
     <string name="report_title">نقصان کی رپورٹ</string>
     <string name="report_step">مرحلہ %1$d از 3</string>

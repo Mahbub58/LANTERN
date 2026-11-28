@@ -15,6 +15,7 @@ import com.google.firebase.ai.type.GenerativeBackend
 import com.google.firebase.ai.type.PublicPreviewAPI
 import com.mahbub.lantern.domain.ai.NanoStatus
 import com.mahbub.lantern.domain.ai.OnDeviceInference
+import com.mahbub.lantern.domain.ai.TriageResult
 import com.mahbub.lantern.domain.model.AppLanguage
 import com.mahbub.lantern.domain.model.SafetyCard
 import java.util.concurrent.atomic.AtomicBoolean
@@ -42,6 +43,8 @@ import kotlinx.coroutines.launch
  * when the device is online and cloud fallback is enabled.
  *
  * On-device inference is single-turn text only. No chat history is kept.
+ * Matching and answering happen in the same call, with the same system prompt
+ * and structured result shape as [FirebaseCloudInference].
  */
 @OptIn(PublicPreviewAPI::class)
 @Singleton
@@ -77,92 +80,104 @@ class FirebaseOnDeviceInference @Inject constructor() : OnDeviceInference {
 
     override suspend fun isAvailable(): Boolean {
         val current = checkStatus()
+        // Keep Settings/Debug in sync when availability changes outside init.
+        statusFlow.value = current
         Log.i(TAG, "isAvailable=$current extension=${runCatching { model.onDeviceExtension != null }.getOrDefault(false)}")
         return current == NanoStatus.READY
     }
 
     /**
-     * Asks Nano to match the question to one card. This is what makes matching
-     * work across English, Urdu and Roman Urdu even when the exact keywords in
-     * the card JSON are not present.
+     * Matches the question and writes the grounded answer in one Nano call,
+     * using the same prompt, card data and structured
+     * `{matched, cardId, answer}` contract as the cloud model.
      *
-     * Returns `null` only when Nano ran and chose no card. Any load or
-     * inference problem throws, so the router can surface an error to the user.
+     * Returns [TriageResult.NoMatch] only when Nano ran and chose no card. Any
+     * load or inference problem throws, so the router can fall back to cloud.
      */
-    override suspend fun matchCard(question: String, cards: List<SafetyCard>): String? {
-        if (cards.isEmpty()) return null
-        if (checkStatus() != NanoStatus.READY) {
-            throw OnDeviceInferenceException("Gemini Nano is not available on this device")
-        }
-
-        val prompt = AiPrompts.onDeviceMatch(question, cards)
-        return try {
-            val response = withTimeout(MATCH_TIMEOUT_MS) {
-                model.generateObject(GeneratedMatch.firebaseAISchema(), prompt)
-            }
-            val source = response.response.inferenceSource
-            Log.i(TAG, "match inferenceSource=$source")
-            if (source != InferenceSource.ON_DEVICE) {
-                throw OnDeviceInferenceException("ONLY_ON_DEVICE match returned $source")
-            }
-
-            val rawId = response.getObject()?.cardId?.trim().orEmpty()
-            val matched = rawId
-                .takeIf { it.isNotEmpty() && !it.equals("none", ignoreCase = true) }
-                ?.takeIf { candidate -> cards.any { it.id == candidate } }
-            Log.i(TAG, "on-device match cardId=${matched ?: "none"}")
-            matched
-        } catch (t: TimeoutCancellationException) {
-            throw OnDeviceInferenceException("On-device match timed out", t)
-        } catch (t: Throwable) {
-            if (t is OnDeviceInferenceException) throw t
-            throw OnDeviceInferenceException("On-device match failed", t)
-        }
-    }
-
-    override suspend fun answer(
+    override suspend fun matchAndAnswer(
         question: String,
-        card: SafetyCard,
+        cards: List<SafetyCard>,
         language: AppLanguage,
-    ): String {
+    ): TriageResult {
+        if (cards.isEmpty()) return TriageResult.NoMatch
         if (checkStatus() != NanoStatus.READY) {
             throw OnDeviceInferenceException("Gemini Nano is not available on this device")
         }
-        val prompt = AiPrompts.onDevice(question, card, language)
+
+        // Put the whole prompt in the user content. Some Nano/AICore versions
+        // ignore system instructions, and the card catalog must be visible to
+        // the model. The compact card projection keeps this under the
+        // 4,000-token on-device request limit.
+        val prompt = buildString {
+            appendLine(AiPrompts.triageSystem(cards, language))
+            appendLine()
+            append(AiPrompts.triageQuestion(question))
+        }
+        Log.i(TAG, "on-device triage cards=${cards.size} promptChars=${prompt.length}")
+        if (prompt.length > MAX_PROMPT_CHARS) {
+            // AICore rejects the whole request above 4,000 tokens. Rather than
+            // let that become a mysterious failure, hand the question to the
+            // router's cloud fallback with a clear reason.
+            throw OnDeviceInferenceException(
+                "On-device prompt is too long (${prompt.length} chars); using cloud fallback",
+            )
+        }
         var lastError: Throwable? = null
 
-        // Structured output keeps the cardId/answer contract reliable. One
-        // retry, then the router falls back to cloud or the vetted card text.
         for (attempt in 0 until MAX_ATTEMPTS) {
             try {
+                // Reuse the warmed-up singleton model. Creating a new model per
+                // request bypasses the extension warm-up done by checkStatus().
                 val response = withTimeout(ON_DEVICE_TIMEOUT_MS) {
                     model.generateObject(
-                        GeneratedAnswer.firebaseAISchema(),
-                        if (attempt == 0) prompt else "$prompt\nReturn the safety card id and the answer.",
+                        GeneratedTriageResult.firebaseAISchema(),
+                        if (attempt == 0) {
+                            prompt
+                        } else {
+                            "$prompt\nReturn the exact {matched,cardId,answer} JSON object."
+                        },
                     )
                 }
                 val source = response.response.inferenceSource
-                Log.i(TAG, "inferenceSource=$source model=${FirebaseAiConfig.CLOUD_MODEL_NAME}")
+                Log.i(TAG, "triage inferenceSource=$source")
                 if (source != InferenceSource.ON_DEVICE) {
                     Log.w(TAG, "ONLY_ON_DEVICE returned $source; rejecting the response")
                     continue
                 }
+
                 val generated = response.getObject()
-                if (generated != null && generated.cardId == card.id) {
-                    return ModelJson.encodeAnswer(generated.cardId, generated.answer)
+                if (generated == null) {
+                    lastError = IllegalStateException("On-device triage was empty")
+                    continue
                 }
-                lastError = IllegalStateException("On-device structured answer was empty or used the wrong card")
-                Log.w(TAG, "On-device answer rejected: ${generated?.cardId ?: "null"} vs ${card.id}")
+                Log.i(
+                    TAG,
+                    "on-device triage matched=${generated.matched} cardId=${generated.cardId} answerChars=${generated.answer.length}",
+                )
+                val cardId = generated.cardId.trim()
+                if (!generated.matched && (cardId.isEmpty() || cardId.equals("none", true))) {
+                    return TriageResult.NoMatch
+                }
+
+                val card = cards.firstOrNull { it.id.equals(cardId, ignoreCase = true) }
+                val answer = generated.answer.trim()
+                    .ifBlank { card?.title?.forLanguage(language).orEmpty() }
+                Log.i(TAG, "on-device triage resolved cardId=${card?.id ?: cardId}")
+                return TriageResult(
+                    matched = generated.matched,
+                    cardId = cardId.takeUnless { it.isEmpty() || it.equals("none", true) },
+                    answer = answer,
+                )
             } catch (t: TimeoutCancellationException) {
                 lastError = t
-                Log.w(TAG, "On-device request timed out after ${ON_DEVICE_TIMEOUT_MS} ms")
+                Log.w(TAG, "On-device triage timed out after $ON_DEVICE_TIMEOUT_MS ms")
                 break
             } catch (t: Throwable) {
                 lastError = t
-                Log.w(TAG, "On-device attempt ${attempt + 1} failed", t)
+                Log.w(TAG, "On-device triage attempt ${attempt + 1} failed", t)
             }
         }
-        throw OnDeviceInferenceException("On-device inference failed", lastError)
+        throw OnDeviceInferenceException("On-device triage failed", lastError)
     }
 
     private suspend fun refreshStatus() {
@@ -240,7 +255,13 @@ class FirebaseOnDeviceInference @Inject constructor() : OnDeviceInference {
         const val TAG = "LanternOnDevice"
         const val MAX_ATTEMPTS = 2
         const val ON_DEVICE_TIMEOUT_MS = 20_000L
-        const val MATCH_TIMEOUT_MS = 10_000L
+
+        /**
+         * Conservative character guard for AICore's 4,000-token request limit.
+         * The current six-card pack is about 8,000 characters (roughly
+         * 2,100-2,800 tokens depending on the script).
+         */
+        const val MAX_PROMPT_CHARS = 10_000
     }
 }
 

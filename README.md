@@ -17,13 +17,12 @@ on the phone or Gemini in the cloud, and damage reports queue locally and sync t
 ## What works in Phase 2
 
 - **Firebase AI Logic, hybrid, Nano-first.** Gemini Nano 4 is requested on-device with
-  `InferenceMode.ONLY_ON_DEVICE` and `OnDeviceModelOption.PREVIEW`. **Nano performs all
-  question-to-card matching** in English, Urdu and Roman Urdu. The Ask screen will not open
-  the answer page unless Nano is ready; it shows an error instead. A cloud model
-  (`gemini-3.8-flash`, `ONLY_IN_CLOUD`) is used only for the explicit "deeper answer" or
-  when Nano matched a card but failed to generate the answer. The response's
-  `inferenceSource` is logged, and the UI badge is driven by the router's
-  `InferenceSource`.
+  `InferenceMode.ONLY_ON_DEVICE` and `OnDeviceModelOption.PREVIEW`. Nano tries
+  question-to-card matching first in English, Urdu and Roman Urdu. If Nano is unavailable,
+  fails, or finds no card, the same question falls back to cloud AI Logic
+  (`gemini-3.5-flash-lite`, `ONLY_IN_CLOUD`), which receives the same card catalog and
+  returns `{matched, cardId, answer}`. The response's `inferenceSource` is logged, and the
+  UI badge is driven by the router's `InferenceSource`.
 - **Anonymous Firebase Auth.** A uid is created on first launch; reports are scoped to it.
 - **Firestore, local-first.** Unlimited offline persistence. Every report is written to a
   local queue first, then to Firestore; it is removed from the queue only after the server
@@ -31,7 +30,8 @@ on the phone or Gemini in the cloud, and damage reports queue locally and sync t
   restarting the app. The sync badge is derived from `snapshot.metadata.hasPendingWrites`
   (QUEUED → SENT). Citizens can create reports and read only their own.
 - **Remote Config, live.** `confidence_threshold`, `cloud_fallback_enabled`, `alert_level`,
-  `emergency_numbers_json`, `safety_cards` with safe in-app defaults and real-time updates.
+  `emergency_numbers` (legacy `emergency_numbers_json` still works), `safety_cards` with
+  safe in-app defaults and real-time updates.
 - **App Check.** Debug provider for the judges' build, Play Integrity for release. App Check
   is installed before any AI Logic or Firestore call. If a token cannot be obtained, the
   root screen shows an **"App Check failed"** snackbar. Debug builds include the debug token
@@ -44,7 +44,7 @@ on the phone or Gemini in the cloud, and damage reports queue locally and sync t
   are kept in a local queue until anonymous sign-in is possible, then written to Firestore.
 - **Privacy.** `PiiScrubber` runs before every cloud prompt. Coordinates never go to a
   model. Drafts never leave the phone; a report leaves only when the person presses Send.
-- **Tests.** 137 unit tests, 22 emulator-based Firestore rules tests, an always-on Firebase
+- **Tests.** 147 unit tests, 22 emulator-based Firestore rules tests, an always-on Firebase
   wiring test, and an opt-in airplane-mode offline flow test.
 - **Real accuracy numbers.** 40 questions (20 Roman Urdu, 10 Urdu, 10 English) and 20
   reports are measured by `AccuracyReportTest` as a lexical baseline; runtime matching is
@@ -90,21 +90,23 @@ domain.
 
 ### Routing policy (`AiRouter`, pure Kotlin)
 
-**Gemini Nano is the only matcher.** There is no keyword or lexical fallback at runtime.
-The Ask screen checks Nano before navigating; if Nano is not ready the user stays on Ask
-and sees an error.
+**Gemini Nano is tried first; cloud AI Logic is the fallback.** There is no keyword or
+lexical matcher at runtime. The Ask screen always opens the answer page; the router decides
+which model answers.
 
-1. **Nano unavailable** — no navigation. If the router is reached anyway it returns
-   `NoMatch` + `OnDeviceIssue.UNAVAILABLE`; no cloud call is made.
-2. **Nano match** — Nano reads the question in English, Urdu or Roman Urdu and returns the
-   best card id through structured `{cardId}` output. No card -> `NoMatch` with local
-   emergency numbers.
-3. **On-device answer** — the matched card is answered by Nano in strict JSON, then
-   validated for card id, safety and grounding.
-4. **Generation fallback** — if Nano matched but generation failed, use cloud when online
-   and enabled, otherwise the matched card text. The answer carries
-   `OnDeviceIssue.FAILED` and the answer screen says Nano did not produce it.
-5. Every outcome returns `Answer(card, text, InferenceSource, onDeviceIssue)`.
+1. **Nano triage** — Nano receives the same system instruction, the same full
+   `safety_cards` JSON and the person’s question in English, Urdu or Roman Urdu, and
+   returns the structured `{matched, cardId, answer}` object in one call.
+2. **Cloud triage fallback** — if Nano is unavailable, throws, or returns
+   `matched:false`, the PII-scrubbed question goes to cloud AI Logic with the same prompt
+   and result schema.
+3. **Matched** — the app looks up the returned card id in the live card pack and renders
+   the existing safety-card result page, with the `On this phone` or `Cloud` badge.
+4. **Not matched** — a `matched:false` from the cloud becomes a `NoMatch`; the answer page
+   shows the localized “We didn’t match your question…” message.
+5. **Deeper answer** — the explicit cloud request skips Nano, and falls back to Nano if the
+   cloud call fails. Every outcome returns `Answer(card, text, InferenceSource,
+   onDeviceIssue)`.
 
 ---
 
@@ -121,7 +123,7 @@ and sees an error.
 ```kotlin
 Firebase.ai(backend = GenerativeBackend.googleAI())
     .generativeModel(
-        modelName = "gemini-3.8-flash",          // required by the builder, unused on-device
+        modelName = "gemini-3.5-flash-lite",     // required by the builder, unused on-device
         onDeviceConfig = OnDeviceConfig(
             mode = InferenceMode.ONLY_ON_DEVICE,  // the router owns escalation
             modelOption = OnDeviceModelOption.PREVIEW, // Nano 4, not the STABLE Nano 3/2
@@ -133,12 +135,15 @@ Firebase.ai(backend = GenerativeBackend.googleAI())
 ```
 
 - Single-turn text only: no chat history is created or sent.
-- The answer uses AI Logic **structured output**: a `@Generable` data class plus the
-  `firebase-ai-ksp-processor` generates the schema, so the `cardId`/`answer` contract is
-  enforced by the SDK instead of trusting a "please return JSON" prompt. The defensive
-  `ModelJson` extractor remains for the cloud-only desk tasks.
+- Matching and answering happen in one Nano call, using the **same `triageSystem` prompt,
+  same card data and same `GeneratedTriageResult` schema** as the cloud path.
+- Nano receives the prompt as **user content** (some AICore versions ignore system
+  instructions). The card pack is projected to the fields needed for matching and the
+  selected answer language, keeping the request under Nano's **4,000-token limit**.
+- AI Logic **structured output** (`@Generable` + `firebase-ai-ksp-processor`) enforces the
+  `{matched, cardId, answer}` contract instead of trusting a "please return JSON" prompt.
 - One retry on a model or schema error, then the exception reaches `AiRouter`, which falls
-  back to cloud (if allowed) or the vetted card text.
+  back to cloud when allowed.
 - `response.inferenceSource` is logged as `LanternOnDevice: inferenceSource=ON_DEVICE`.
 - The status flow maps `OnDeviceModelStatus` to the existing `NanoStatus` enum, so the
   Settings screen shows **Ready / Downloading / Not downloaded / Unavailable**. A
@@ -150,17 +155,23 @@ Firebase.ai(backend = GenerativeBackend.googleAI())
 ```kotlin
 Firebase.ai(backend = GenerativeBackend.googleAI())
     .generativeModel(
-        modelName = "gemini-3.8-flash",
+        modelName = "gemini-3.5-flash-lite",
+        systemInstruction = content { text(AiPrompts.triageSystem(cards, language)) },
         onDeviceConfig = OnDeviceConfig(mode = InferenceMode.ONLY_IN_CLOUD),
     )
 ```
 
 - The question has already passed through `PiiScrubber` in `AiRouter`.
-- The prompt contains only the scrubbed question and the retrieved card. No coordinates,
-  uid, device id or exact address.
-- The cloud answer uses the same `@Generable` schema and goes through
-  `GroundedAnswerValidator` before the router accepts it. A drifting answer is rejected and
-  the card text is shown instead.
+- The cloud system instruction is the **same `triageSystem` prompt** as Nano and contains
+  the same **card catalog projection** plus the matching/answer rules. The user content
+  contains only the scrubbed question. No coordinates, uid, device id or exact address are
+  sent.
+- The fallback call returns the `@Generable` `GeneratedTriageResult` object
+  `{matched, cardId, answer}`. `matched:false` becomes the localized no-match message;
+  `matched:true` renders the existing card result page. See
+  [`docs/ai_system_prompt.md`](docs/ai_system_prompt.md) for the exact shared prompt.
+- The cloud answer also goes through `GroundedAnswerValidator` before the router accepts
+  it. A drifting answer is rejected and the card title is used instead.
 - `response.inferenceSource` is logged as `LanternCloud: inferenceSource=IN_CLOUD`.
 
 ### Cloud-only desk tasks (Phase 3)
@@ -212,7 +223,7 @@ app/src/main/assets/safety_cards.json     6 cards (3 flood, 3 earthquake)
 app/src/main/assets/test/questions.csv    40 retrieval questions
 app/src/main/assets/test/reports.csv      20 report-field cases
 app/src/main/res/values*/strings.xml      EN, UR, Roman Urdu
-app/src/test/                             137 JVM tests
+app/src/test/                             147 JVM tests
 app/src/androidTest/                      Firebase wiring + opt-in offline flow
 firestore.rules                           security rules
 firestore.indexes.json                    no composite indexes required
@@ -296,7 +307,8 @@ Create these parameters in **Remote Config** with the same values as
 | `confidence_threshold` | Number | `0.55` |
 | `cloud_fallback_enabled` | Boolean | `true` |
 | `alert_level` | String | `WARNING` |
-| `emergency_numbers_json` | String | `[{"label":"Rescue 1122","number":"1122",…}]` |
+| `emergency_numbers` | JSON/String | `[{"number":"1122","name":"Emergency Number","region":"Punjab"},…]` |
+| `emergency_numbers_json` | String | *(legacy fallback)* `[{"label":"Rescue 1122","number":"1122",…}]` |
 | `safety_cards` | String | *(empty — bundled asset is used)* |
 
 The app calls `setDefaultsAsync` first, fetches and activates, then listens with
@@ -452,7 +464,7 @@ denied to the app; only the console/Admin SDK can publish.
 ## Tests
 
 ```bash
-# 137 JVM tests: Nano-only routing, App Check, safety, PII, use cases, ViewModels, data helpers
+# 147 JVM tests: Nano-first + cloud fallback routing, App Check, safety, PII, use cases, ViewModels, data helpers
 ./gradlew :app:testDebugUnitTest
 
 # 22 Firestore emulator rules tests (Node)
@@ -515,8 +527,8 @@ These are domain-level limitations to fix in Phase 3; they are not hidden by the
 | --- | --- | --- | --- |
 | Report stays **Queued**, no `reports` doc | `LanternReports: submit ... uid=false` or `LanternAuth: ... CONFIGURATION_NOT_FOUND` | Anonymous Auth is disabled | Authentication → Sign-in method → **Anonymous → Enable** |
 | "App Check failed" snackbar appears | `LanternAppCheck: App Check token failed` | Debug token not registered, Play Integrity not configured, or no network | Tap **Copy token** (debug builds) and register it, or configure Play Integrity; then reopen the app |
-| Cloud answer falls back to card text | `LanternCloud: ... The Gemini API free tier is not available for this project` | The project has no Gemini API free tier | Enable billing at <https://aistudio.google.com/billing>, or use a project with a free tier |
-| Ask stays on the Ask screen with a Gemini Nano notice | `LanternOnDevice: OnDeviceModelStatus=UNAVAILABLE` | Emulator/unsupported device, or Nano not downloaded/enrolled. Matching is Nano-only, so the app deliberately blocks navigation | Use a supported physical device and enroll in the AICore Developer Preview |
+| Answer shows an error / "Question not matched" | `LanternCloud: QuotaExceededException ... limit: 20, model: gemini-3.8-flash` | Free tier exhausted: Gemini 3.8 Flash allows only 20 requests/day per project | The demo uses `gemini-3.5-flash-lite` (500/day). For 3.8 Flash, wait for the daily reset or enable billing at <https://aistudio.google.com/billing> |
+| Answer comes from the cloud with a Gemini Nano notice | `LanternOnDevice: OnDeviceModelStatus=UNAVAILABLE` | Emulator/unsupported device, or Nano not downloaded/enrolled. The router falls back to cloud AI Logic when online | Use a supported physical device and enroll in the AICore Developer Preview, or stay online for cloud answers |
 | Firestore `PERMISSION_DENIED` | `Report write rejected` | Rules not deployed or App Check token rejected | Deploy `firestore.rules` and register the token |
 
 The on-device SDK is wired correctly. On a supported device the log shows
@@ -537,9 +549,10 @@ adb logcat -s LanternOnDevice LanternCloud LanternReports LanternAuth LanternApp
 - [x] **AI Logic called at runtime.** `FirebaseOnDeviceInference` and
   `FirebaseCloudInference` call `generateObject`/`generateContent` on a `GenerativeModel`;
   the on-device pass is `ONLY_ON_DEVICE` with `OnDeviceModelOption.PREVIEW` (Nano 4).
-- [x] **Nano-only matching, explicit error.** Gemini Nano matches every question in English,
-  Urdu or Roman Urdu. If Nano is not ready the Ask screen blocks navigation and explains
-  why; there is no keyword fallback. Cloud is only a generation fallback or a deeper answer.
+- [x] **Nano-first matching with cloud fallback.** Gemini Nano matches every question in
+  English, Urdu or Roman Urdu first. If Nano is unavailable or cannot match, cloud AI Logic
+  receives the same card catalog and returns `{matched, cardId, answer}`; `matched:false`
+  shows the localized ask-again message.
 - [x] **App Check.** Debug provider in debug, Play Integrity in release, installed before AI
   Logic/Firestore. Enforcement is a console step (below).
 - [x] **Anonymous auth.** `FirebaseAuthRepository` signs in anonymously and stores the uid

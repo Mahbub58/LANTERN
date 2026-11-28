@@ -42,7 +42,6 @@ import com.mahbub.lantern.domain.model.EmergencyNumber
 import com.mahbub.lantern.domain.model.InferenceSource
 import com.mahbub.lantern.domain.model.LocalizedList
 import com.mahbub.lantern.domain.model.LocalizedText
-import com.mahbub.lantern.domain.model.OnDeviceIssue
 import com.mahbub.lantern.domain.model.SafetyCard
 import com.mahbub.lantern.presentation.components.CloudGradientButton
 import com.mahbub.lantern.presentation.components.InferenceBadge
@@ -121,12 +120,6 @@ fun AnswerScreen(
                 )
             }
 
-            if (!state.isLoading) {
-                state.answer?.onDeviceIssue?.let { issue ->
-                    NanoIssueBanner(issue = issue, onRetry = onRetry)
-                }
-            }
-
             when {
                 state.isLoading -> LoadingState(
                     message = stringResource(R.string.answer_loading),
@@ -159,13 +152,13 @@ private fun AnswerContent(
     val colors = LanternTheme.colors
     val context = LocalContext.current
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        InferenceBadge(source = answer.source)
-        if (!answer.isNoMatch) {
+    if (!answer.isNoMatch) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            InferenceBadge(source = answer.source)
             Text(
                 text = stringResource(R.string.answer_title),
                 style = MaterialTheme.typography.labelSmall,
@@ -214,7 +207,7 @@ private fun AnswerContent(
         }
     }
 
-    if (answer.source == InferenceSource.CARD_TEXT) {
+    if (!answer.isNoMatch && answer.source == InferenceSource.CARD_TEXT) {
         Text(
             text = stringResource(R.string.answer_card_text_note),
             style = MaterialTheme.typography.bodySmall,
@@ -287,38 +280,6 @@ private fun AnswerContent(
         onClick = onAskAnother,
         modifier = Modifier.fillMaxWidth(),
     )
-}
-
-@Composable
-private fun NanoIssueBanner(issue: OnDeviceIssue, onRetry: () -> Unit) {
-    val colors = LanternTheme.colors
-    LanternCard(borderColor = colors.amber.copy(alpha = 0.6f)) {
-        Text(
-            text = stringResource(R.string.answer_nano_title),
-            style = MaterialTheme.typography.labelLarge,
-            color = colors.amber,
-        )
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = stringResource(
-                if (issue == OnDeviceIssue.FAILED) {
-                    R.string.answer_nano_failed
-                } else {
-                    R.string.answer_nano_unavailable
-                },
-            ),
-            style = MaterialTheme.typography.bodyMedium,
-            color = colors.textPrimary,
-        )
-        if (issue == OnDeviceIssue.FAILED) {
-            Spacer(Modifier.height(4.dp))
-            LanternTextButton(
-                text = stringResource(R.string.answer_retry),
-                onClick = onRetry,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-    }
 }
 
 @Composable

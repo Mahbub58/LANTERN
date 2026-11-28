@@ -97,7 +97,6 @@ class OfflineFlowInstrumentedTest {
             onDeviceInference = FirebaseOnDeviceInference(),
             cloudInference = FirebaseCloudInference(validator),
             piiScrubber = PiiScrubber(),
-            answerValidator = validator,
             safetyGuard = SafetyGuard(),
         )
         val ask = AskLanternUseCase(cards, config, connectivity, router)

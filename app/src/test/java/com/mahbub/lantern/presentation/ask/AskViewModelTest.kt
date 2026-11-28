@@ -6,7 +6,6 @@ import com.mahbub.lantern.domain.model.Alert
 import com.mahbub.lantern.domain.model.AlertLevel
 import com.mahbub.lantern.domain.model.AppLanguage
 import com.mahbub.lantern.domain.model.LocalizedText
-import com.mahbub.lantern.domain.usecase.IsNanoReadyUseCase
 import com.mahbub.lantern.domain.usecase.ObserveAlertsUseCase
 import com.mahbub.lantern.domain.usecase.ObserveConnectivityUseCase
 import com.mahbub.lantern.domain.usecase.ObserveLanguageUseCase
@@ -19,7 +18,6 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -49,7 +47,6 @@ class AskViewModelTest {
     private val observeConnectivity = mockk<ObserveConnectivityUseCase>()
     private val observeLanguage = mockk<ObserveLanguageUseCase>()
     private val refreshAlerts = mockk<RefreshAlertsUseCase>()
-    private val isNanoReady = mockk<IsNanoReadyUseCase>()
     private val observeNanoStatus = mockk<ObserveNanoStatusUseCase>()
     private val nanoStatus = MutableStateFlow(NanoStatus.READY)
 
@@ -59,13 +56,11 @@ class AskViewModelTest {
         every { observeLanguage() } returns language
         every { observeNanoStatus() } returns nanoStatus
         coEvery { refreshAlerts() } returns Unit
-        coEvery { isNanoReady() } returns true
         return AskViewModel(
             observeAlerts,
             observeConnectivity,
             observeLanguage,
             refreshAlerts,
-            isNanoReady,
             observeNanoStatus,
         )
     }
@@ -128,18 +123,17 @@ class AskViewModelTest {
     }
 
     @Test
-    fun `nano unavailable blocks navigation and shows the error`() = runTest {
+    fun `nano unavailable still opens the answer page for the cloud fallback`() = runTest {
+        nanoStatus.value = NanoStatus.UNAVAILABLE
         val vm = viewModel()
-        coEvery { isNanoReady() } returns false
         vm.onQueryChange("flood water rising")
 
         vm.events.test {
             vm.ask()
-            advanceUntilIdle()
-            expectNoEvents()
+            assertEquals(AskEvent.OpenAnswer("flood water rising"), awaitItem())
         }
 
-        assertTrue(vm.state.value.nanoError)
+        assertEquals(NanoStatus.UNAVAILABLE, vm.state.value.nanoStatus)
     }
 
     @Test
@@ -149,13 +143,11 @@ class AskViewModelTest {
         every { observeLanguage() } returns language
         every { observeNanoStatus() } returns nanoStatus
         coEvery { refreshAlerts() } returns Unit
-        coEvery { isNanoReady() } returns true
         val vm = AskViewModel(
             observeAlerts,
             observeConnectivity,
             observeLanguage,
             refreshAlerts,
-            isNanoReady,
             observeNanoStatus,
         )
 
