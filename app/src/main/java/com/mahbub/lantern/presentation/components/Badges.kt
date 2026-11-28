@@ -46,6 +46,7 @@ fun inferenceSourceLabel(source: InferenceSource): String = stringResource(
         InferenceSource.ON_DEVICE -> R.string.badge_on_device
         InferenceSource.CLOUD -> R.string.badge_cloud
         InferenceSource.CARD_TEXT -> R.string.badge_card_text
+        InferenceSource.OFFLINE_MATCH -> R.string.badge_offline_match
     },
 )
 
@@ -59,6 +60,7 @@ fun InferenceBadge(
         InferenceSource.ON_DEVICE -> colors.tealTint to colors.teal
         InferenceSource.CLOUD -> colors.blueTint to colors.blue
         InferenceSource.CARD_TEXT -> colors.neutralTint to colors.neutralBadgeText
+        InferenceSource.OFFLINE_MATCH -> colors.tealTint to colors.teal
     }
     val label = inferenceSourceLabel(source)
     val description = stringResource(R.string.cd_report_source, label)

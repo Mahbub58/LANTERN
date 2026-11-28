@@ -22,7 +22,9 @@ import javax.inject.Inject
  *    PII-scrubbed question goes to cloud AI Logic when online and enabled.
  * 3. A cloud `matched:false` becomes a NoMatch; the answer page shows the
  *    localized "we did not match your question" message.
- * 4. A match from either engine renders the existing safety-card result page.
+ * 4. If no AI engine can answer (offline and Nano unsupported, cloud disabled,
+ *    or both calls failed), the deterministic [LexicalSafetyCardRetriever]
+ *    matches the same approved cards and the badge says `Offline match`.
  * 5. Every result carries the card and an [InferenceSource] for the UI badge.
  */
 class AiRouter @Inject constructor(
@@ -30,6 +32,7 @@ class AiRouter @Inject constructor(
     private val cloudInference: CloudInference,
     private val piiScrubber: PiiScrubber,
     private val safetyGuard: SafetyGuard,
+    private val retriever: LexicalSafetyCardRetriever,
 ) {
 
     suspend fun route(
@@ -127,6 +130,20 @@ class AiRouter @Inject constructor(
                     source = InferenceSource.ON_DEVICE,
                 )
             }
+        }
+
+        // 4. Last resort: no AI engine can answer. Use the deterministic
+        // keyword/title matcher so an offline device without Nano still shows
+        // the right approved safety card.
+        val local = runCatching { retriever.bestCard(question, cards) }.getOrNull()
+        if (local != null && local.score >= RoutingConfig.MINIMUM_MATCH_SCORE) {
+            return Answer(
+                card = local.card,
+                text = local.card.title.forLanguage(language),
+                source = InferenceSource.OFFLINE_MATCH,
+                retrievalScore = local.score,
+                onDeviceIssue = onDeviceIssue,
+            )
         }
 
         // A model request failed; do not disguise that as "your question did

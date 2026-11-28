@@ -10,10 +10,12 @@ data class ScoredCard(
 )
 
 /**
- * Offline lexical retrieval across English, Urdu and Roman Urdu keywords.
+ * Last-resort offline matcher across English, Urdu and Roman Urdu keywords.
  *
- * The retrieval score IS the routing confidence: the on-device model does not
- * expose a reliable confidence, so we never trust a model-reported number.
+ * It is only used when Gemini Nano cannot run and the cloud is unavailable
+ * (offline or disabled). The router still prefers AI for normal answers; this
+ * keeps the app useful on devices where Nano is unsupported and there is no
+ * signal, using the same approved safety cards.
  */
 class LexicalSafetyCardRetriever @Inject constructor() {
 

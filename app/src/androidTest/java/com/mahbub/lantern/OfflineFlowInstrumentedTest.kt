@@ -18,6 +18,7 @@ import com.mahbub.lantern.data.remote.LocalReportQueue
 import com.mahbub.lantern.data.remote.ReportDraftStore
 import com.mahbub.lantern.domain.ai.AiRouter
 import com.mahbub.lantern.domain.ai.GroundedAnswerValidator
+import com.mahbub.lantern.domain.ai.LexicalSafetyCardRetriever
 import com.mahbub.lantern.domain.ai.PiiScrubber
 import com.mahbub.lantern.domain.ai.SafetyGuard
 import com.mahbub.lantern.domain.model.AppLanguage
@@ -98,6 +99,7 @@ class OfflineFlowInstrumentedTest {
             cloudInference = FirebaseCloudInference(validator),
             piiScrubber = PiiScrubber(),
             safetyGuard = SafetyGuard(),
+            retriever = LexicalSafetyCardRetriever(),
         )
         val ask = AskLanternUseCase(cards, config, connectivity, router)
         val reports = FirebaseReportRepository(

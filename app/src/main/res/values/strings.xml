@@ -102,6 +102,7 @@
     <string name="badge_on_device">On this phone</string>
     <string name="badge_cloud">Cloud</string>
     <string name="badge_card_text">Card text</string>
+    <string name="badge_offline_match">Offline match</string>
     <string name="answer_card_text_note">Showing the vetted card text, unchanged.</string>
     <string name="answer_no_match_note">Tap a number to call. Responders can change these numbers for your area.</string>
     <string name="answer_safety_note">Lantern does not diagnose illness or give medicine doses.</string>

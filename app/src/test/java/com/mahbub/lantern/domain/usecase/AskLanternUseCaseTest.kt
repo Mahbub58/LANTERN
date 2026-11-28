@@ -5,6 +5,7 @@ import com.mahbub.lantern.data.fake.FakeConfigRepository
 import com.mahbub.lantern.data.fake.FakeConnectivityRepository
 import com.mahbub.lantern.data.fake.FakeOnDeviceInference
 import com.mahbub.lantern.domain.ai.AiRouter
+import com.mahbub.lantern.domain.ai.LexicalSafetyCardRetriever
 import com.mahbub.lantern.domain.ai.PiiScrubber
 import com.mahbub.lantern.domain.ai.SafetyGuard
 import com.mahbub.lantern.domain.model.AppLanguage
@@ -34,6 +35,7 @@ class AskLanternUseCaseTest {
             cloudInference = FakeCloudInference(),
             piiScrubber = PiiScrubber(),
             safetyGuard = SafetyGuard(),
+            retriever = LexicalSafetyCardRetriever(),
         ),
     )
 

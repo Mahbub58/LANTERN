@@ -38,6 +38,7 @@ class AiRouterTest {
             cloudInference = cloud,
             piiScrubber = PiiScrubber(),
             safetyGuard = SafetyGuard(),
+            retriever = LexicalSafetyCardRetriever(),
         )
 
         coEvery { onDevice.isAvailable() } returns false
@@ -153,9 +154,26 @@ class AiRouterTest {
     }
 
     @Test
-    fun `nano unavailable offline never calls the cloud`() = runTest {
+    fun `nano unavailable offline uses the local matcher`() = runTest {
         val answer = router.route(
             question = "flood water entering my home",
+            language = AppLanguage.EN,
+            config = RoutingConfig(),
+            isOnline = false,
+            cards = cards,
+        )
+
+        assertFalse(answer.isNoMatch)
+        assertEquals(InferenceSource.OFFLINE_MATCH, answer.source)
+        assertEquals(card, answer.card)
+        assertEquals(OnDeviceIssue.UNAVAILABLE, answer.onDeviceIssue)
+        coVerify(exactly = 0) { cloud.matchAndAnswer(any(), any(), any()) }
+    }
+
+    @Test
+    fun `nano unavailable offline leaves unrelated questions unmatched`() = runTest {
+        val answer = router.route(
+            question = "my neighbour has a fever",
             language = AppLanguage.EN,
             config = RoutingConfig(),
             isOnline = false,
@@ -165,6 +183,20 @@ class AiRouterTest {
         assertTrue(answer.isNoMatch)
         assertEquals(OnDeviceIssue.UNAVAILABLE, answer.onDeviceIssue)
         coVerify(exactly = 0) { cloud.matchAndAnswer(any(), any(), any()) }
+    }
+
+    @Test
+    fun `local matcher handles roman urdu on an offline unsupported device`() = runTest {
+        val answer = router.route(
+            question = "pani ghar mein aa gaya",
+            language = AppLanguage.ROMAN_UR,
+            config = RoutingConfig(),
+            isOnline = false,
+            cards = cards,
+        )
+
+        assertEquals(InferenceSource.OFFLINE_MATCH, answer.source)
+        assertEquals(card, answer.card)
     }
 
     @Test
@@ -347,13 +379,30 @@ class AiRouterTest {
     }
 
     @Test
-    fun `a cloud request failure surfaces an error instead of a false no-match`() = runTest {
+    fun `a cloud request failure falls back to the local matcher`() = runTest {
+        coEvery { cloud.matchAndAnswer(any(), any(), any()) } throws
+            IllegalStateException("network down")
+
+        val answer = router.route(
+            question = "flood water rising",
+            language = AppLanguage.EN,
+            config = RoutingConfig(),
+            isOnline = true,
+            cards = cards,
+        )
+
+        assertEquals(InferenceSource.OFFLINE_MATCH, answer.source)
+        assertEquals(card, answer.card)
+    }
+
+    @Test
+    fun `a cloud failure with no local match surfaces an error`() = runTest {
         coEvery { cloud.matchAndAnswer(any(), any(), any()) } throws
             IllegalStateException("network down")
 
         val failure = runCatching {
             router.route(
-                question = "flood water rising",
+                question = "my neighbour has a fever",
                 language = AppLanguage.EN,
                 config = RoutingConfig(),
                 isOnline = true,

@@ -97,6 +97,7 @@
     <string name="badge_on_device">Isi phone par</string>
     <string name="badge_cloud">Cloud</string>
     <string name="badge_card_text">Card text</string>
+    <string name="badge_offline_match">Offline match</string>
     <string name="answer_card_text_note">Verified card ka text bina tabdeeli ke dikhaya ja raha hai.</string>
     <string name="answer_no_match_note">Number par tap kar ke call karein. Responders aap ke ilaqe ke numbers badal sakte hain.</string>
     <string name="answer_safety_note">Lantern bimari ki diagnosis ya dawai ki khurak nahi batata.</string>

@@ -4,6 +4,9 @@ enum class InferenceSource {
     ON_DEVICE,
     CLOUD,
     CARD_TEXT,
+
+    /** Offline keyword/lexical matcher; used when Nano and cloud are unavailable. */
+    OFFLINE_MATCH,
 }
 
 enum class EmergencyType(val label: String) {

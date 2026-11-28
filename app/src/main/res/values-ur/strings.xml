@@ -97,6 +97,7 @@
     <string name="badge_on_device">اسی فون پر</string>
     <string name="badge_cloud">کلاؤڈ</string>
     <string name="badge_card_text">کارڈ متن</string>
+    <string name="badge_offline_match">آف لائن میچ</string>
     <string name="answer_card_text_note">تصدیق شدہ کارڈ کا متن بغیر تبدیلی کے دکھایا جا رہا ہے۔</string>
     <string name="answer_no_match_note">نمبر پر تھپتھپا کر کال کریں۔ امدادی ٹیمیں آپ کے علاقے کے نمبر بدل سکتی ہیں۔</string>
     <string name="answer_safety_note">Lantern بیماری کی تشخیص یا دوائی کی خوراک نہیں بتاتا۔</string>

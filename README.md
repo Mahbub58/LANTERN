@@ -44,11 +44,11 @@ on the phone or Gemini in the cloud, and damage reports queue locally and sync t
   are kept in a local queue until anonymous sign-in is possible, then written to Firestore.
 - **Privacy.** `PiiScrubber` runs before every cloud prompt. Coordinates never go to a
   model. Drafts never leave the phone; a report leaves only when the person presses Send.
-- **Tests.** 147 unit tests, 22 emulator-based Firestore rules tests, an always-on Firebase
+- **Tests.** 150 unit tests, 22 emulator-based Firestore rules tests, an always-on Firebase
   wiring test, and an opt-in airplane-mode offline flow test.
 - **Real accuracy numbers.** 40 questions (20 Roman Urdu, 10 Urdu, 10 English) and 20
-  reports are measured by `AccuracyReportTest` as a lexical baseline; runtime matching is
-  Gemini Nano.
+  reports are measured by `AccuracyReportTest`. The lexical scorer is the last-resort
+  offline fallback when Nano and cloud are unavailable.
 
 The UI, domain and presentation layers are unchanged from Phase 1. Only `data/`, `di/`, the
 Application wiring, build files and the new Firebase rules/config files changed.
@@ -90,21 +90,25 @@ domain.
 
 ### Routing policy (`AiRouter`, pure Kotlin)
 
-**Gemini Nano is tried first; cloud AI Logic is the fallback.** There is no keyword or
-lexical matcher at runtime. The Ask screen always opens the answer page; the router decides
-which model answers.
+**Gemini Nano is tried first; cloud AI Logic is the fallback; a deterministic local
+matcher is the last resort.** The Ask screen always opens the answer page; the router
+decides which engine answers.
 
-1. **Nano triage** — Nano receives the same system instruction, the same full
-   `safety_cards` JSON and the person’s question in English, Urdu or Roman Urdu, and
-   returns the structured `{matched, cardId, answer}` object in one call.
+1. **Nano triage** — Nano receives the same prompt, the same card catalog and the person’s
+   question in English, Urdu or Roman Urdu, and returns the structured
+   `{matched, cardId, answer}` object in one call.
 2. **Cloud triage fallback** — if Nano is unavailable, throws, or returns
    `matched:false`, the PII-scrubbed question goes to cloud AI Logic with the same prompt
    and result schema.
 3. **Matched** — the app looks up the returned card id in the live card pack and renders
    the existing safety-card result page, with the `On this phone` or `Cloud` badge.
-4. **Not matched** — a `matched:false` from the cloud becomes a `NoMatch`; the answer page
-   shows the localized “We didn’t match your question…” message.
-5. **Deeper answer** — the explicit cloud request skips Nano, and falls back to Nano if the
+4. **Offline matcher** — if Nano is unavailable and the cloud cannot run (offline, cloud
+   fallback disabled, or both calls failed), `LexicalSafetyCardRetriever` scores the same
+   approved cards across English, Urdu and Roman Urdu keywords. A match renders the same
+   result page with an `Offline match` badge.
+5. **Not matched** — a `matched:false` from the cloud becomes a `NoMatch`; the answer page
+   shows the localized “We could not match your question…” message.
+6. **Deeper answer** — the explicit cloud request skips Nano, and falls back to Nano if the
    cloud call fails. Every outcome returns `Answer(card, text, InferenceSource,
    onDeviceIssue)`.
 
@@ -223,7 +227,7 @@ app/src/main/assets/safety_cards.json     6 cards (3 flood, 3 earthquake)
 app/src/main/assets/test/questions.csv    40 retrieval questions
 app/src/main/assets/test/reports.csv      20 report-field cases
 app/src/main/res/values*/strings.xml      EN, UR, Roman Urdu
-app/src/test/                             147 JVM tests
+app/src/test/                             150 JVM tests
 app/src/androidTest/                      Firebase wiring + opt-in offline flow
 firestore.rules                           security rules
 firestore.indexes.json                    no composite indexes required
@@ -464,7 +468,7 @@ denied to the app; only the console/Admin SDK can publish.
 ## Tests
 
 ```bash
-# 147 JVM tests: Nano-first + cloud fallback routing, App Check, safety, PII, use cases, ViewModels, data helpers
+# 150 JVM tests: Nano-first + cloud fallback routing, App Check, safety, PII, use cases, ViewModels, data helpers
 ./gradlew :app:testDebugUnitTest
 
 # 22 Firestore emulator rules tests (Node)
@@ -481,10 +485,11 @@ Anonymous Auth enabled, rules deployed) and a device/emulator where airplane mod
 toggled. It asks offline, submits a report offline, reconnects, waits for SENT, and reads the
 document back from Firestore with `Source.SERVER`.
 
-### Accuracy report (lexical baseline, not the runtime matcher)
+### Accuracy report (offline fallback matcher)
 
-Runtime matching is Gemini Nano only. This benchmark measures the deterministic lexical
-scorer kept in the test sources so the two approaches can be compared honestly.
+Runtime matching prefers Gemini Nano, then cloud AI Logic. This benchmark measures the
+deterministic lexical scorer that runs only when both are unavailable. It now lives in the
+main sources (`LexicalSafetyCardRetriever`) and is also used by the accuracy test.
 
 Run:
 
